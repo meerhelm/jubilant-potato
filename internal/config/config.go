@@ -23,6 +23,9 @@ type Config struct {
 	PreferLanguages []string `json:"prefer_languages,omitempty"`
 	Sources         []Source `json:"sources"`
 
+	// DisableUpdateCheck stops the startup check for new releases on GitHub.
+	DisableUpdateCheck bool `json:"disable_update_check,omitempty"`
+
 	// ItchClientID overrides the built-in itch.io OAuth client for QR login.
 	ItchClientID string `json:"itch_client_id,omitempty"`
 

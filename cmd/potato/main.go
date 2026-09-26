@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"syscall"
 
 	"github.com/meerhelm/jubilant-potato/internal/config"
 	"github.com/meerhelm/jubilant-potato/internal/download"
@@ -54,7 +55,7 @@ func main() {
 		log.Fatal(err)
 	}
 	plat := platform.Detect(appDir, cfg.RomRoot)
-	log.Printf("firmware=%s device=%q roms=%s", plat.Firmware, plat.Device, plat.RomRoot)
+	log.Printf("version=%s firmware=%s device=%q roms=%s", version, plat.Firmware, plat.Device, plat.RomRoot)
 
 	client := source.NewHTTPClient()
 	info := source.ClientInfo{
@@ -104,7 +105,7 @@ func main() {
 	}
 	srcs, notices := buildSources()
 
-	err = ui.Run(ui.Options{
+	restart, err := ui.Run(ui.Options{
 		Config:       cfg,
 		Platform:     plat,
 		Sources:      srcs,
@@ -118,6 +119,14 @@ func main() {
 	})
 	if err != nil {
 		log.Fatal(err)
+	}
+	if restart {
+		// Replace this process with the freshly installed binary.
+		exe, err := os.Executable()
+		if err == nil {
+			err = syscall.Exec(exe, os.Args, os.Environ())
+		}
+		log.Fatalf("restart: %v", err)
 	}
 }
 

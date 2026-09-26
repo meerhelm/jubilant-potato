@@ -16,6 +16,7 @@ import (
 	"github.com/meerhelm/jubilant-potato/internal/download"
 	"github.com/meerhelm/jubilant-potato/internal/platform"
 	"github.com/meerhelm/jubilant-potato/internal/source"
+	"github.com/meerhelm/jubilant-potato/internal/update"
 )
 
 // Options configures Run.
@@ -65,17 +66,22 @@ type app struct {
 	prefs catalog.Prefs
 
 	second *secondary // bottom screen on dual-screen devices, may be nil
-	script *script
-	shot   string // save the next frame to this path
+
+	updateCheck    *task[*update.Release] // nil until a check starts
+	updateNotified bool
+	restart        bool // relaunch the (updated) binary after quitting
+	script         *script
+	shot           string // save the next frame to this path
 }
 
-// Run opens the window and blocks until the user quits.
-// It must be called from the main OS thread.
-func Run(opts Options) error {
+// Run opens the window and blocks until the user quits. It reports whether
+// the app should restart itself (after an update). It must be called from
+// the main OS thread.
+func Run(opts Options) (restart bool, err error) {
 	setLanguage(opts.Config.Language)
 
 	if err := sdl.Init(sdl.INIT_VIDEO | sdl.INIT_JOYSTICK | sdl.INIT_GAMECONTROLLER); err != nil {
-		return err
+		return false, err
 	}
 	defer sdl.Quit()
 	sdl.ShowCursor(sdl.DISABLE)
@@ -96,27 +102,27 @@ func Run(opts Options) error {
 		wi, err1 := strconv.Atoi(ws)
 		hi, err2 := strconv.Atoi(hs)
 		if err1 != nil || err2 != nil {
-			return fmt.Errorf("invalid window size %q, want WxH", opts.Window)
+			return false, fmt.Errorf("invalid window size %q, want WxH", opts.Window)
 		}
 		w, h, flags = int32(wi), int32(hi), sdl.WINDOW_SHOWN|sdl.WINDOW_ALLOW_HIGHDPI
 	}
 	win, err := sdl.CreateWindow("Jubilant Potato", sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED, w, h, flags)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer win.Destroy()
 
 	r, err := sdl.CreateRenderer(win, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
 	if err != nil {
 		if r, err = sdl.CreateRenderer(win, -1, sdl.RENDERER_SOFTWARE); err != nil {
-			return err
+			return false, err
 		}
 	}
 	defer r.Destroy()
 
 	g, err := newGfx(win, r)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer g.destroy()
 
@@ -133,8 +139,11 @@ func Run(opts Options) error {
 	if len(opts.Notices) > 0 {
 		a.notify(strings.Join(opts.Notices, "; "))
 	}
+	if update.IsRelease(opts.Version) && !opts.Config.DisableUpdateCheck {
+		a.checkUpdates()
+	}
 	a.loop()
-	return nil
+	return a.restart, nil
 }
 
 func (a *app) loop() {
@@ -166,6 +175,13 @@ func (a *app) loop() {
 		}
 		if a.top().Update() {
 			dirty = true
+		}
+		if a.updateCheck != nil && !a.updateNotified && a.updateCheck.Poll() {
+			if rel, ok := a.updateAvailable(); ok {
+				a.notify(T("Update available: %s", rel.Version))
+				dirty = true
+			}
+			a.updateNotified = true
 		}
 		if a.toast != "" && now.After(a.toastUntil) {
 			a.toast = ""

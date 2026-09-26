@@ -22,6 +22,7 @@ const (
 	rowAdd = iota
 	rowDownloads
 	rowButtons
+	rowUpdates
 	rowSupport
 	extraRows
 )
@@ -60,6 +61,8 @@ func (s *sourcesScreen) Handle(act Action) {
 			s.a.push(newDownloadsScreen(s.a))
 		case rowButtons:
 			s.a.push(newButtonsScreen(s.a))
+		case rowUpdates:
+			s.a.push(newUpdateScreen(s.a))
 		case rowSupport:
 			s.a.push(newSupportScreen(s.a))
 		}
@@ -95,6 +98,12 @@ func (s *sourcesScreen) Draw(g *Gfx, area sdl.Rect) {
 			rowText(g, r, "↓  "+T("Downloads"), right, sel)
 		case rowButtons:
 			rowText(g, r, "≡  "+T("Button setup"), "", sel)
+		case rowUpdates:
+			right := s.a.opts.Version
+			if rel, ok := s.a.updateAvailable(); ok {
+				right = T("%s available", rel.Version)
+			}
+			rowText(g, r, "↑  "+T("Updates"), right, sel)
 		case rowSupport:
 			rowText(g, r, "♥  "+T("Support the project"), "", sel)
 		}

@@ -53,6 +53,7 @@ On first launch the app creates an empty `config.json` next to the binary.
 | `language` | `en` or `ru` (default: from `$LANG`, else English) |
 | `rom_root` | override the detected ROM root |
 | `swap_ab` | swap confirm/back if your pad mapping is positional |
+| `disable_update_check` | don't check GitHub for new versions on startup |
 | `prefer_regions` | variant preference, e.g. `["USA", "Europe", "Japan"]` |
 | `prefer_languages` | variant preference, e.g. `["ru", "en"]` (default: UI language, then English) |
 | `joystick_buttons` | raw button index → action (`a`, `b`, `x`, `y`, `l1`, `r1`, `select`, `start`, `menu`) for pads SDL has no mapping for |
