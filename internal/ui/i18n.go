@@ -66,6 +66,7 @@ var ru = map[string]string{
 	"Done":              "Готово",
 	"Type":              "Ввод",
 	"Clear":             "Очистить",
+	"Updated to %s":     "Обновлено до %s",
 	"no update package for this firmware; download it from the website": "Для этой прошивки нет пакета обновления, скачайте его с сайта",
 	"Updates":                     "Обновления",
 	"%s available":                "доступна %s",

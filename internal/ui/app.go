@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -138,6 +139,10 @@ func Run(opts Options) (restart bool, err error) {
 	a.push(newSourcesScreen(a))
 	if len(opts.Notices) > 0 {
 		a.notify(strings.Join(opts.Notices, "; "))
+	}
+	if from := os.Getenv("POTATO_UPDATED_FROM"); from != "" {
+		os.Unsetenv("POTATO_UPDATED_FROM")
+		a.notify(T("Updated to %s", opts.Version))
 	}
 	if update.IsRelease(opts.Version) && !opts.Config.DisableUpdateCheck {
 		a.checkUpdates()

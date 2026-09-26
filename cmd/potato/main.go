@@ -121,7 +121,9 @@ func main() {
 		log.Fatal(err)
 	}
 	if restart {
-		// Replace this process with the freshly installed binary.
+		// Replace this process with the freshly installed binary, which
+		// greets the user with the new version number.
+		os.Setenv("POTATO_UPDATED_FROM", version)
 		exe, err := os.Executable()
 		if err == nil {
 			err = syscall.Exec(exe, os.Args, os.Environ())
