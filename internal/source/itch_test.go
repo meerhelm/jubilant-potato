@@ -62,6 +62,11 @@ func TestItch(t *testing.T) {
 		case p == "/cdn/polar.gb":
 			http.ServeContent(w, r, "polar.gb", testTime, strings.NewReader(rom))
 		case p == "/oauth/device":
+			if r.FormValue("client_id") == "new" {
+				w.WriteHeader(404) // what itch.io answers before approval
+				fmt.Fprint(w, `{"errors":["invalid api endpoint"]}`)
+				return
+			}
 			if r.FormValue("client_id") != "cid" || r.FormValue("code_challenge_method") != "S256" || r.FormValue("scope") != itchScopes {
 				w.WriteHeader(400)
 				return
@@ -104,6 +109,10 @@ func TestItch(t *testing.T) {
 	p, err := src.StartPairing(ctx)
 	if err != nil || p.UserCode != "KX7T-4MPB" {
 		t.Fatalf("pairing = %+v, %v", p, err)
+	}
+	unapproved := newItch(config.Source{}, srv.Client(), ClientInfo{ItchClientID: "new"}, nil)
+	if _, err := unapproved.StartPairing(ctx); !errors.Is(err, ErrItchNotApproved) {
+		t.Errorf("unapproved client: %v", err)
 	}
 	if err := src.PollPairing(ctx, p); !errors.Is(err, ErrPairingPending) {
 		t.Fatalf("poll: %v", err)

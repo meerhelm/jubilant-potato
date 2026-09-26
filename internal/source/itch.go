@@ -57,6 +57,9 @@ var (
 var (
 	// ErrItchNoClient means QR login isn't set up (no OAuth client ID).
 	ErrItchNoClient = errors.New("itch.io QR login is not configured; put an API key in config.json")
+	// ErrItchNotApproved means itch.io hasn't enabled QR login for the
+	// client yet (it answers 404 until support approves it).
+	ErrItchNotApproved = errors.New("itch.io hasn't approved QR login for this app yet; use an API key in config.json meanwhile")
 	// ErrPaid means the game costs money and the user doesn't own it.
 	ErrPaid = errors.New("paid game: buy it on itch.io first")
 	// ErrNoFiles means the game has no downloadable ROM for this system.
@@ -370,14 +373,22 @@ func (s *itchSource) fetch(ctx context.Context, method, u string, form url.Value
 				Errors []string `json:"errors"`
 			}
 			json.NewDecoder(resp.Body).Decode(&e)
+			msg := resp.Status
 			if len(e.Errors) > 0 {
-				return fmt.Errorf("itch.io: %s", strings.Join(e.Errors, "; "))
+				msg = strings.Join(e.Errors, "; ")
 			}
-			return fmt.Errorf("itch.io: %s", resp.Status)
+			return &itchError{status: resp.StatusCode, msg: msg}
 		}
 		return decode(resp.Body)
 	}
 }
+
+type itchError struct {
+	status int
+	msg    string
+}
+
+func (e *itchError) Error() string { return "itch.io: " + e.msg }
 
 // itchLimiter spaces requests to itch.io and pauses them all after a 429.
 type itchLimiter struct {
@@ -437,6 +448,10 @@ func (s *itchSource) StartPairing(ctx context.Context) (*Pairing, error) {
 		"code_challenge_method": {"S256"},
 	}
 	if err := s.api(ctx, http.MethodPost, "/oauth/device", form, &resp); err != nil {
+		var ie *itchError
+		if errors.As(err, &ie) && ie.status == http.StatusNotFound {
+			return nil, ErrItchNotApproved
+		}
 		return nil, err
 	}
 	return &Pairing{

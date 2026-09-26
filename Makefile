@@ -2,7 +2,7 @@ BUILDER := jubilant-potato-builder:arm64
 DOCKER_RUN := docker run --rm --platform linux/arm64 -v "$(CURDIR)":/src -v potato-gocache:/cache $(BUILDER)
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 # OAuth client approved by itch.io for QR login (not a secret).
-ITCH_CLIENT_ID ?=
+ITCH_CLIENT_ID ?= b761c426c98b91a3375bb34da4aeeafc
 
 .PHONY: run test build-arm64 builder package sort clean
 

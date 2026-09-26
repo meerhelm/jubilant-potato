@@ -121,6 +121,10 @@ func (s *pairingScreen) Draw(g *Gfx, area sdl.Rect) {
 	case s.err != nil:
 		msg := T("Error: %s", s.err.Error())
 		switch {
+		case errors.Is(s.err, source.ErrItchNotApproved):
+			drawCentered(g, area, colDim, T("itch.io is still reviewing QR sign-in for this app."),
+				T("Put an itch.io API key into config.json"), T("(\"token\" of the itch.io source)"))
+			return
 		case errors.Is(s.err, source.ErrItchNoClient):
 			drawCentered(g, area, colDim, T("QR sign-in for itch.io is not set up yet."),
 				T("Put an itch.io API key into config.json"), T("(\"token\" of the itch.io source)"))
