@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"log"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -78,8 +80,28 @@ func newInput(swapAB bool, joyButtons map[string]string) *Input {
 	return in
 }
 
+// debugInput logs every button event when $POTATO_DEBUG is set.
+var debugInput = os.Getenv("POTATO_DEBUG") != ""
+
 // Handle processes one event and returns the actions it triggers.
 func (in *Input) Handle(ev sdl.Event) []Action {
+	acts := in.handle(ev)
+	if debugInput {
+		switch e := ev.(type) {
+		case *sdl.ControllerButtonEvent:
+			log.Printf("input: controller %d button %d state %d -> %v", e.Which, e.Button, e.State, acts)
+		case *sdl.JoyButtonEvent:
+			log.Printf("input: joystick %d button %d state %d -> %v", e.Which, e.Button, e.State, acts)
+		case *sdl.JoyHatEvent:
+			log.Printf("input: joystick %d hat %d value %d -> %v", e.Which, e.Hat, e.Value, acts)
+		case *sdl.KeyboardEvent:
+			log.Printf("input: key %d state %d -> %v", e.Keysym.Sym, e.State, acts)
+		}
+	}
+	return acts
+}
+
+func (in *Input) handle(ev sdl.Event) []Action {
 	switch e := ev.(type) {
 	case *sdl.JoyDeviceAddedEvent:
 		in.open(int(e.Which))
@@ -267,11 +289,13 @@ func (in *Input) open(index int) {
 	if sdl.IsGameController(index) {
 		if c := sdl.GameControllerOpen(index); c != nil {
 			in.controllers[c.Joystick().InstanceID()] = c
+			log.Printf("input: controller %q: %s", c.Name(), c.Mapping())
 		}
 		return
 	}
 	if j := sdl.JoystickOpen(index); j != nil {
 		in.joysticks[j.InstanceID()] = j
+		log.Printf("input: joystick without mapping %q, using joystick_buttons", j.Name())
 	}
 }
 
@@ -293,4 +317,13 @@ func (in *Input) closeAll() {
 	for id := range in.joysticks {
 		in.close(id)
 	}
+}
+
+var actionLabels = [...]string{"none", "up", "down", "left", "right", "a", "b", "x", "y", "l1", "r1", "select", "start", "menu"}
+
+func (a Action) String() string {
+	if int(a) < len(actionLabels) {
+		return actionLabels[a]
+	}
+	return strconv.Itoa(int(a))
 }

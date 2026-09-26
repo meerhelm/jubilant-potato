@@ -116,3 +116,5 @@ SDL_VIDEODRIVER=dummy POTATO_SCRIPT="a,wait,shot:systems.png,quit" ./potato -win
 ```
 
 Logs go to `potato.log` (app) and `potato.out` (launcher) in the app folder.
+Set `POTATO_DEBUG=1` to also log every button press and the action it maps to,
+which helps with `swap_ab` and `joystick_buttons` on unfamiliar pads.
