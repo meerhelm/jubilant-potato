@@ -1,167 +1,109 @@
 package ui
 
 import (
+	"embed"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 )
 
-var lang = "en"
+// Translations are keyed by the English UI string. Add a language by
+// dropping locales/<code>.json next to the others and listing it below.
+//
+//go:embed locales/*.json
+var localeFS embed.FS
 
-// setLanguage picks the UI language: the user's setting, then the
-// firmware's, then $LANG; anything but Russian falls back to English.
-func setLanguage(configured, firmware string) {
-	l := configured
-	if l == "" {
-		l = firmware
+// Language is a UI language with its name in that language.
+type Language struct {
+	Code, Name string
+}
+
+// Languages in the order the picker shows them.
+var Languages = []Language{
+	{"en", "English"},
+	{"ru", "Русский"},
+	{"uk", "Українська"},
+	{"be", "Беларуская"},
+	{"pl", "Polski"},
+	{"es", "Español"},
+	{"pt", "Português"},
+	{"zh-Hans", "简体中文"},
+	{"zh-Hant", "繁體中文"},
+}
+
+var (
+	lang         = "en"
+	translations map[string]string // for lang; nil for English
+)
+
+// normalizeLanguage maps settings like "ru_RU", "pt-BR" or "zh_TW" to a
+// supported code, or "" if there is none.
+func normalizeLanguage(l string) string {
+	l = strings.ToLower(strings.TrimSpace(l))
+	l, _, _ = strings.Cut(l, ".") // "ru_RU.UTF-8"
+	l = strings.ReplaceAll(l, "_", "-")
+	switch {
+	case l == "":
+		return ""
+	case l == "zh-hant" || strings.HasPrefix(l, "zh-tw") || strings.HasPrefix(l, "zh-hk") || strings.HasPrefix(l, "zh-mo"):
+		return "zh-Hant"
+	case strings.HasPrefix(l, "zh"):
+		return "zh-Hans"
 	}
-	if l == "" {
-		l = strings.ToLower(os.Getenv("LANG"))
+	base, _, _ := strings.Cut(l, "-")
+	for _, x := range Languages {
+		if x.Code == base {
+			return base
+		}
 	}
-	lang = "en"
-	if strings.HasPrefix(l, "ru") {
-		lang = "ru"
+	return ""
+}
+
+// resolveLanguage picks the UI language: the user's setting, then the
+// firmware's, then $LANG, else English.
+func resolveLanguage(configured, firmware string) string {
+	for _, l := range []string{configured, firmware, os.Getenv("LANG")} {
+		if code := normalizeLanguage(l); code != "" {
+			return code
+		}
 	}
+	return "en"
+}
+
+// setLanguage switches the UI language; unknown codes fall back to English.
+func setLanguage(code string) {
+	lang, translations = "en", nil
+	if code == "" || code == "en" {
+		return
+	}
+	b, err := localeFS.ReadFile("locales/" + code + ".json")
+	if err != nil {
+		return
+	}
+	var m map[string]string
+	if json.Unmarshal(b, &m) == nil {
+		lang, translations = code, m
+	}
+}
+
+// languageName returns the native name of a language code.
+func languageName(code string) string {
+	for _, l := range Languages {
+		if l.Code == code {
+			return l.Name
+		}
+	}
+	return code
 }
 
 // T returns the translation of an English UI string.
 func T(s string, args ...any) string {
-	if lang == "ru" {
-		if r, ok := ru[s]; ok {
-			s = r
-		}
+	if tr, ok := translations[s]; ok {
+		s = tr
 	}
 	if len(args) > 0 {
 		return fmt.Sprintf(s, args...)
 	}
 	return s
-}
-
-var ru = map[string]string{
-	"Sources":                "Источники",
-	"Downloads":              "Загрузки",
-	"Downloads (%d active)":  "Загрузки (активно: %d)",
-	"Open":                   "Открыть",
-	"Back":                   "Назад",
-	"Quit":                   "Выход",
-	"Download":               "Скачать",
-	"Search":                 "Поиск",
-	"Letter":                 "Буква",
-	"Cancel":                 "Отмена",
-	"Retry":                  "Повтор",
-	"Clear done":             "Убрать готовые",
-	"Loading…":               "Получаю список…",
-	"Error: %s":              "Ошибка: %s",
-	"No sources configured.": "Источники не настроены.",
-	"Add them to config.json next to the app": "Добавьте их в config.json рядом с приложением",
-	"Nothing here":      "Здесь пусто",
-	"No downloads yet":  "Загрузок пока нет",
-	"Queued: %s":        "В очереди: %s",
-	"Already installed": "Уже установлено",
-	"Already in queue":  "Уже в очереди",
-	"%d games":          "Игр: %d",
-	"Free: %s":          "Свободно: %s",
-	"Filter: %s":        "Фильтр: %s",
-	"queued":            "в очереди",
-	"downloading":       "загрузка",
-	"extracting":        "распаковка",
-	"done":              "готово",
-	"failed":            "ошибка",
-	"canceled":          "отменено",
-	"Space":             "Пробел",
-	"Delete":            "Стереть",
-	"Done":              "Готово",
-	"Type":              "Ввод",
-	"Clear":             "Очистить",
-	"Updated to %s":     "Обновлено до %s",
-	"no update package for this firmware; download it from the website": "Для этой прошивки нет пакета обновления, скачайте его с сайта",
-	"Updates":                     "Обновления",
-	"%s available":                "доступна %s",
-	"Update available: %s":        "Доступно обновление: %s",
-	"Install":                     "Установить",
-	"Restart":                     "Перезапустить",
-	"Later":                       "Позже",
-	"Installed: %s":               "Установлена версия: %s",
-	"Checking for updates…":       "Проверяю обновления…",
-	"You have the latest version": "У вас последняя версия",
-	"Update failed":               "Не удалось обновить",
-	"New version %s":              "Новая версия %s",
-	"Downloading %s of %s":        "Скачано %s из %s",
-	"Installed. Restart to use the new version.":          "Установлено. Перезапустите, чтобы начать пользоваться.",
-	"Support the project":                                 "Поддержать проект",
-	"Enjoying the potato?":                                "Нравится картошка?",
-	"Jubilant Potato is free and open source.":            "Jubilant Potato бесплатный и открытый.",
-	"A coffee buys test devices":                          "Кофе — это тестовые устройства",
-	"and support for more handhelds.":                     "и поддержка новых портативок.",
-	"Scan to buy me a coffee:":                            "Отсканируйте, чтобы угостить кофе:",
-	"Thank you!":                                          "Спасибо!",
-	"itch.io is still reviewing QR sign-in for this app.": "itch.io ещё не одобрил вход по QR для приложения.",
-	"free homebrew":                                       "бесплатный homebrew",
-	"Already added":                                       "Уже добавлено",
-	"Getting files…":                                      "Получаю файлы…",
-	"Paid game: buy it on itch.io first":                  "Платная игра: сначала купите её на itch.io",
-	"No %s files in this game":                            "В этой игре нет файлов для %s",
-	"QR sign-in for itch.io is not set up yet.":           "Вход по QR для itch.io ещё не настроен.",
-	"Put an itch.io API key into config.json":             "Положите API-ключ itch.io в config.json",
-	"(\"token\" of the itch.io source)":                   "(поле \"token\" источника itch.io)",
-	"Search archive.org":                                  "Поиск на archive.org",
-	"search collections":                                  "поиск коллекций",
-	"Add":                                                 "Добавить",
-	"Looking at the files…":                               "Смотрю файлы…",
-	"Which system are these games for?":                   "Для какой системы эти игры?",
-	"files: %d":                                           "файлов: %d",
-	"Added to %s":                                         "Добавлено в %s",
-	"Remove":                                              "Удалить",
-	"Remove %s?":                                          "Удалить «%s»?",
-	"Yes":                                                 "Да",
-	"No":                                                  "Нет",
-	"Select":                                              "Выбрать",
-	"Add source":                                          "Добавить источник",
-	"game library server":                                 "сервер библиотеки игр",
-	"Network folder (SMB)":                                "Сетевая папка (SMB)",
-	"NAS, Windows, macOS":                                 "NAS, Windows, macOS",
-	"Web folder (HTTP)":                                   "Веб-папка (HTTP)",
-	"directory listing":                                   "список файлов",
-	"Folder address":                                      "Адрес папки",
-	"Invalid address":                                     "Неверный адрес",
-	"Search again":                                        "Искать снова",
-	"Searching %s…":                                       "Ищу в сети %s…",
-	"Found: %d":                                           "Найдено: %d",
-	"Enter address manually":                              "Ввести адрес вручную",
-	"Find RomM":                                           "Поиск RomM",
-	"RomM address":                                        "Адрес RomM",
-	"Find network folders":                                "Поиск сетевых папок",
-	"Server address":                                      "Адрес сервера",
-	"User on %s":                                          "Пользователь на %s",
-	"Password for %s":                                     "Пароль для %s",
-	"Connecting to %s…":                                   "Подключаюсь к %s…",
-	"Login required":                                      "Нужен вход",
-	"Press A to sign in":                                  "Нажмите A, чтобы войти",
-	"Use this folder":                                     "Использовать эту папку",
-	"systems: %d":                                         "систем: %d",
-	"Button setup":                                        "Настройка кнопок",
-	"Press %s":                                            "Нажмите %s",
-	"Step %d of %d":                                       "Шаг %d из %d",
-	"No such button? Wait %d s to skip":                   "Нет такой кнопки? Пропуск через %d с",
-	"Esc on a keyboard cancels":                           "Esc на клавиатуре — отмена",
-	"Buttons saved":                                       "Кнопки сохранены",
-	"any button":                                          "любая",
-	"ROM downloader":                                      "Загрузчик ROM-ов",
-	"Versions":                                            "Версии",
-	"All":                                                 "Все",
-	"Releases":                                            "Релизы",
-	"all versions":                                        "все версии",
-	"preferred":                                           "основная",
-	"Showing betas, demos and hacks":                      "Показаны беты, демо и хаки",
-	"Showing releases only":                               "Только официальные релизы",
-	"Connect to %s":                                       "Подключение: %s",
-	"Connected":                                           "Подключено",
-	"Scan with your phone":                                "Отсканируйте телефоном",
-	"or open in a browser:":                               "или откройте в браузере:",
-	"and enter the code:":                                 "и введите код:",
-	"Waiting for approval…":                               "Жду подтверждения…",
-	"Code expires in %s":                                  "Код действует ещё %s",
-	"The code has expired":                                "Срок действия кода истёк",
-	"Pairing was declined":                                "Подключение отклонено",
-	"Press A to try again":                                "Нажмите A, чтобы попробовать снова",
 }

@@ -91,13 +91,10 @@ func TestSystemForFile(t *testing.T) {
 }
 
 func TestFirmwareLanguage(t *testing.T) {
-	if got := rocknixLanguage("system.hostname=RG34XX\nsystem.language=ru_RU\n"); got != "ru" {
-		t.Errorf("rocknix ru = %q", got)
+	if got := rocknixLanguage("system.hostname=RG34XX\nsystem.language=ru_RU\n"); got != "ru_RU" {
+		t.Errorf("rocknix = %q", got)
 	}
-	if got := rocknixLanguage("system.language=en_US"); got != "en" {
-		t.Errorf("rocknix en = %q", got)
-	}
-	for name, want := range map[string]string{"Russian\n": "ru", "English (American)": "en", "German": "other", "": ""} {
+	for name, want := range map[string]string{"Russian\n": "ru", "English (American)": "en", "Chinese (Traditional)": "zh_TW", "German": "", "": ""} {
 		if got := muosLanguage(name); got != want {
 			t.Errorf("muosLanguage(%q) = %q, want %q", name, got, want)
 		}

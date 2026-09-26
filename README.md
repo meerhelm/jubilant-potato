@@ -50,7 +50,7 @@ On first launch the app creates an empty `config.json` next to the binary.
 
 | Key | Meaning |
 |---|---|
-| `language` | `en` or `ru` (default: the firmware's UI language on ROCKNIX and muOS, else `$LANG`, else English) |
+| `language` | `en`, `ru`, `uk`, `be`, `pl`, `es`, `pt`, `zh-Hans` or `zh-Hant`; also changeable in the app (default: the firmware's UI language on ROCKNIX and muOS, else `$LANG`, else English) |
 | `rom_root` | override the detected ROM root |
 | `swap_ab` | swap confirm/back if your pad mapping is positional |
 | `disable_update_check` | don't check GitHub for new versions on startup |

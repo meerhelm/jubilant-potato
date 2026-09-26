@@ -104,28 +104,28 @@ func detectLanguage(fw Firmware) string {
 	return ""
 }
 
-// rocknixLanguage extracts "ru" from a system.cfg line "system.language=ru_RU".
+// rocknixLanguage returns the locale from a system.cfg line such as
+// "system.language=ru_RU".
 func rocknixLanguage(cfg string) string {
 	for _, line := range strings.Split(cfg, "\n") {
-		if v, ok := strings.CutPrefix(strings.TrimSpace(line), "system.language="); ok && len(v) >= 2 {
-			return strings.ToLower(v[:2])
+		if v, ok := strings.CutPrefix(strings.TrimSpace(line), "system.language="); ok {
+			return strings.TrimSpace(v)
 		}
 	}
 	return ""
 }
 
-// muosLanguage maps muOS language names ("Russian", "English (American)").
+// muosLanguages maps muOS language names to locale codes.
+var muosLanguages = map[string]string{
+	"English": "en", "English (American)": "en", "Russian": "ru", "Ukrainian": "uk",
+	"Polish": "pl", "Spanish": "es", "Portuguese (BR)": "pt_BR", "Portuguese (PT)": "pt_PT",
+	"Chinese (Simplified)": "zh_CN", "Chinese (Traditional)": "zh_TW",
+}
+
+// muosLanguage maps a muOS language name ("Russian", "Chinese (Traditional)")
+// to a locale code, or "" for languages without a mapping.
 func muosLanguage(name string) string {
-	name = strings.TrimSpace(name)
-	switch {
-	case name == "":
-		return ""
-	case strings.HasPrefix(name, "Russian"):
-		return "ru"
-	case strings.HasPrefix(name, "English"):
-		return "en"
-	}
-	return "other"
+	return muosLanguages[strings.TrimSpace(name)]
 }
 
 func defaultRomRoot(fw Firmware, appDir string) string {

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"embed"
 	"image"
 	"unsafe"
 
@@ -55,6 +56,7 @@ type Gfx struct {
 	scale   float64
 	regular *opentype.Font
 	bold    *opentype.Font
+	cjk     [2][]*opentype.Font   // regular, bold: Chinese fonts for glyphs the Go fonts lack, preferred script first
 	faces   map[textKey]font.Face // keyed by size/bold only
 	cache   map[textKey]*textTex
 	frame   uint64
@@ -70,7 +72,7 @@ func newGfx(win *sdl.Window, r *sdl.Renderer) (*Gfx, error) {
 		return nil, err
 	}
 	g := &Gfx{
-		win: win, r: r, regular: reg, bold: bold,
+		win: win, r: r, regular: reg, bold: bold, cjk: cjkFonts(lang),
 		faces: map[textKey]font.Face{},
 		cache: map[textKey]*textTex{},
 	}
@@ -109,14 +111,107 @@ func (g *Gfx) face(size int, bold bool) font.Face {
 	if bold {
 		fnt = g.bold
 	}
-	f, err := opentype.NewFace(fnt, &opentype.FaceOptions{
-		Size: float64(g.S(size)), DPI: 72, Hinting: font.HintingFull,
-	})
+	opts := &opentype.FaceOptions{Size: float64(g.S(size)), DPI: 72, Hinting: font.HintingFull}
+	main, err := opentype.NewFace(fnt, opts)
 	if err != nil {
 		panic(err) // only fails on invalid options
 	}
-	g.faces[k] = f
-	return f
+	ff := &fallbackFace{main: main}
+	for _, c := range g.cjk[boolIndex(bold)] {
+		if alt, err := opentype.NewFace(c, opts); err == nil {
+			ff.alts = append(ff.alts, alt)
+		}
+	}
+	g.faces[k] = ff
+	return ff
+}
+
+func boolIndex(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+// setFontsFor reloads the Chinese fallback for a UI language (Traditional
+// and Simplified characters differ in shape) and drops cached glyphs.
+func (g *Gfx) setFontsFor(language string) {
+	g.cjk = cjkFonts(language)
+	g.destroy()
+	g.faces = map[textKey]font.Face{}
+	g.cache = map[textKey]*textTex{}
+}
+
+//go:embed fonts/NotoSansSC-400.ttf fonts/NotoSansSC-700.ttf fonts/NotoSansTC-400.ttf fonts/NotoSansTC-700.ttf
+var cjkFS embed.FS
+
+// cjkFonts loads the Noto Sans subsets, the language's own script first:
+// Traditional and Simplified characters differ in shape, and each subset
+// lacks some characters of the other (e.g. the language names).
+func cjkFonts(language string) [2][]*opentype.Font {
+	scripts := []string{"SC", "TC"}
+	if language == "zh-Hant" {
+		scripts = []string{"TC", "SC"}
+	}
+	var out [2][]*opentype.Font
+	for i, w := range []string{"400", "700"} {
+		for _, script := range scripts {
+			b, err := cjkFS.ReadFile("fonts/NotoSans" + script + "-" + w + ".ttf")
+			if err != nil {
+				continue
+			}
+			if f, err := opentype.Parse(b); err == nil {
+				out[i] = append(out[i], f)
+			}
+		}
+	}
+	return out
+}
+
+// fallbackFace draws each rune with the first face that has its glyph.
+type fallbackFace struct {
+	main font.Face
+	alts []font.Face
+}
+
+func (f *fallbackFace) pick(r rune) font.Face {
+	if _, ok := f.main.GlyphAdvance(r); ok {
+		return f.main
+	}
+	for _, alt := range f.alts {
+		if _, ok := alt.GlyphAdvance(r); ok {
+			return alt
+		}
+	}
+	return f.main
+}
+
+func (f *fallbackFace) Glyph(dot fixed.Point26_6, r rune) (image.Rectangle, image.Image, image.Point, fixed.Int26_6, bool) {
+	return f.pick(r).Glyph(dot, r)
+}
+
+func (f *fallbackFace) GlyphBounds(r rune) (fixed.Rectangle26_6, fixed.Int26_6, bool) {
+	return f.pick(r).GlyphBounds(r)
+}
+
+func (f *fallbackFace) GlyphAdvance(r rune) (fixed.Int26_6, bool) {
+	return f.pick(r).GlyphAdvance(r)
+}
+
+func (f *fallbackFace) Kern(r0, r1 rune) fixed.Int26_6 {
+	if f.pick(r0) == f.main && f.pick(r1) == f.main {
+		return f.main.Kern(r0, r1)
+	}
+	return 0
+}
+
+func (f *fallbackFace) Metrics() font.Metrics { return f.main.Metrics() }
+
+func (f *fallbackFace) Close() error {
+	for _, alt := range f.alts {
+		alt.Close()
+	}
+	return f.main.Close()
 }
 
 // LineHeight returns the pixel height of a text line.

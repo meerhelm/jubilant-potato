@@ -79,7 +79,7 @@ type app struct {
 // the app should restart itself (after an update). It must be called from
 // the main OS thread.
 func Run(opts Options) (restart bool, err error) {
-	setLanguage(opts.Config.Language, opts.Platform.Language)
+	setLanguage(resolveLanguage(opts.Config.Language, opts.Platform.Language))
 
 	if err := sdl.Init(sdl.INIT_VIDEO | sdl.INIT_JOYSTICK | sdl.INIT_GAMECONTROLLER); err != nil {
 		return false, err
@@ -129,13 +129,7 @@ func Run(opts Options) (restart bool, err error) {
 
 	a := &app{opts: opts, gfx: g, input: newInput(opts.Config.SwapAB, joystickButtons(opts)), script: loadScript(), second: second}
 	defer a.input.closeAll()
-	a.prefs = catalog.DefaultPrefs(lang)
-	if len(opts.Config.PreferRegions) > 0 {
-		a.prefs.Regions = opts.Config.PreferRegions
-	}
-	if len(opts.Config.PreferLanguages) > 0 {
-		a.prefs.Languages = opts.Config.PreferLanguages
-	}
+	a.updatePrefs()
 	a.push(newSourcesScreen(a))
 	if len(opts.Notices) > 0 {
 		a.notify(strings.Join(opts.Notices, "; "))
@@ -328,4 +322,35 @@ func joystickButtons(opts Options) map[string]string {
 		return opts.Config.JoystickButtons
 	}
 	return opts.Platform.DefaultJoystickButtons()
+}
+
+// updatePrefs derives version preferences from the config and UI language.
+func (a *app) updatePrefs() {
+	base, _, _ := strings.Cut(lang, "-") // "zh-Hans" -> "zh", as in ROM names
+	a.prefs = catalog.DefaultPrefs(base)
+	if len(a.opts.Config.PreferRegions) > 0 {
+		a.prefs.Regions = a.opts.Config.PreferRegions
+	}
+	if len(a.opts.Config.PreferLanguages) > 0 {
+		a.prefs.Languages = a.opts.Config.PreferLanguages
+	}
+}
+
+// applyLanguage switches the UI language now and remembers the choice
+// ("" follows the firmware).
+func (a *app) applyLanguage(code string) {
+	a.opts.Config.Language = code
+	setLanguage(resolveLanguage(code, a.opts.Platform.Language))
+	a.gfx.setFontsFor(lang)
+	if a.second != nil {
+		a.second.g.setFontsFor(lang)
+		if a.second.logo != nil {
+			a.second.logo.Destroy()
+		}
+		a.second.logo, a.second.drawn = nil, false
+	}
+	a.updatePrefs()
+	if err := a.saveConfig(); err != nil {
+		a.notify(T("Error: %s", err.Error()))
+	}
 }
