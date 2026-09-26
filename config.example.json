@@ -1,0 +1,28 @@
+{
+  "language": "ru",
+  "sources": [
+    {
+      "name": "Home server",
+      "type": "http",
+      "url": "http://192.168.1.10:8080/roms/"
+    },
+    {
+      "name": "NAS (explicit folders, basic auth)",
+      "type": "http",
+      "url": "https://nas.local/games/",
+      "username": "potato",
+      "password": "change-me",
+      "systems": {
+        "gba": "Nintendo - Game Boy Advance",
+        "psx": ["PS1/USA", "PS1/Europe"]
+      }
+    },
+    {
+      "name": "Archive.org",
+      "type": "archive.org",
+      "systems": {
+        "gba": ["your-archive-item-identifier"]
+      }
+    }
+  ]
+}

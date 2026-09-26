@@ -1,0 +1,296 @@
+package ui
+
+import (
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/veandco/go-sdl2/sdl"
+)
+
+// Action is a logical button press named after the printed button labels:
+// A confirms, B goes back.
+type Action int
+
+const (
+	None Action = iota
+	Up
+	Down
+	Left
+	Right
+	A
+	B
+	X
+	Y
+	L1
+	R1
+	Select
+	Start
+	Menu
+)
+
+var actionNames = map[string]Action{
+	"up": Up, "down": Down, "left": Left, "right": Right, "a": A, "b": B, "x": X, "y": Y,
+	"l1": L1, "r1": R1, "select": Select, "start": Start, "menu": Menu,
+}
+
+const (
+	repeatDelay    = 350 * time.Millisecond
+	repeatInterval = 55 * time.Millisecond
+	axisPress      = 16000
+	axisRelease    = 8000
+)
+
+type axisKey struct {
+	joy  sdl.JoystickID
+	axis uint8
+}
+
+// Input turns SDL events into Actions with auto-repeat for held buttons.
+type Input struct {
+	swapAB     bool
+	joyButtons map[uint8]Action
+
+	controllers map[sdl.JoystickID]*sdl.GameController
+	joysticks   map[sdl.JoystickID]*sdl.Joystick
+
+	held    map[Action]time.Time // action -> next repeat time
+	axisDir map[axisKey]Action
+	hatDir  map[sdl.JoystickID]uint8
+}
+
+func newInput(swapAB bool, joyButtons map[string]string) *Input {
+	in := &Input{
+		swapAB:      swapAB,
+		joyButtons:  map[uint8]Action{},
+		controllers: map[sdl.JoystickID]*sdl.GameController{},
+		joysticks:   map[sdl.JoystickID]*sdl.Joystick{},
+		held:        map[Action]time.Time{},
+		axisDir:     map[axisKey]Action{},
+		hatDir:      map[sdl.JoystickID]uint8{},
+	}
+	for k, v := range joyButtons {
+		idx, err := strconv.Atoi(k)
+		if a, ok := actionNames[strings.ToLower(v)]; ok && err == nil {
+			in.joyButtons[uint8(idx)] = a
+		}
+	}
+	return in
+}
+
+// Handle processes one event and returns the actions it triggers.
+func (in *Input) Handle(ev sdl.Event) []Action {
+	switch e := ev.(type) {
+	case *sdl.JoyDeviceAddedEvent:
+		in.open(int(e.Which))
+	case *sdl.JoyDeviceRemovedEvent:
+		in.close(e.Which)
+
+	case *sdl.KeyboardEvent:
+		if e.Repeat != 0 {
+			return nil
+		}
+		return in.set(keyAction(e.Keysym.Sym), e.Type == sdl.KEYDOWN)
+
+	case *sdl.ControllerButtonEvent:
+		return in.set(in.controllerButton(e.Button), e.Type == sdl.CONTROLLERBUTTONDOWN)
+	case *sdl.ControllerAxisEvent:
+		switch e.Axis {
+		case sdl.CONTROLLER_AXIS_LEFTX:
+			return in.axis(axisKey{e.Which, e.Axis}, e.Value, Left, Right)
+		case sdl.CONTROLLER_AXIS_LEFTY:
+			return in.axis(axisKey{e.Which, e.Axis}, e.Value, Up, Down)
+		}
+
+	// Raw joystick events are only used for pads without a controller mapping.
+	case *sdl.JoyButtonEvent:
+		if _, ok := in.controllers[e.Which]; !ok {
+			return in.set(in.joyButtons[e.Button], e.Type == sdl.JOYBUTTONDOWN)
+		}
+	case *sdl.JoyHatEvent:
+		if _, ok := in.controllers[e.Which]; !ok {
+			return in.hat(e.Which, e.Value)
+		}
+	case *sdl.JoyAxisEvent:
+		if _, ok := in.controllers[e.Which]; !ok && e.Axis < 2 {
+			if e.Axis == 0 {
+				return in.axis(axisKey{e.Which, e.Axis}, e.Value, Left, Right)
+			}
+			return in.axis(axisKey{e.Which, e.Axis}, e.Value, Up, Down)
+		}
+	}
+	return nil
+}
+
+// Repeats returns auto-repeat actions for buttons that are still held.
+func (in *Input) Repeats(now time.Time) []Action {
+	var out []Action
+	for a, next := range in.held {
+		if now.After(next) {
+			out = append(out, a)
+			in.held[a] = now.Add(repeatInterval)
+		}
+	}
+	return out
+}
+
+func (in *Input) set(a Action, down bool) []Action {
+	if a == None {
+		return nil
+	}
+	if !down {
+		delete(in.held, a)
+		return nil
+	}
+	if repeats(a) {
+		in.held[a] = time.Now().Add(repeatDelay)
+	}
+	return []Action{a}
+}
+
+func repeats(a Action) bool {
+	switch a {
+	case Up, Down, Left, Right, L1, R1:
+		return true
+	}
+	return false
+}
+
+func (in *Input) axis(k axisKey, v int16, neg, pos Action) []Action {
+	prev := in.axisDir[k]
+	cur := prev
+	switch {
+	case v <= -axisPress:
+		cur = neg
+	case v >= axisPress:
+		cur = pos
+	case v > -axisRelease && v < axisRelease:
+		cur = None
+	}
+	if cur == prev {
+		return nil
+	}
+	in.axisDir[k] = cur
+	in.set(prev, false)
+	return in.set(cur, true)
+}
+
+func (in *Input) hat(joy sdl.JoystickID, v uint8) []Action {
+	prev := in.hatDir[joy]
+	in.hatDir[joy] = v
+	var out []Action
+	for _, d := range []struct {
+		bit uint8
+		a   Action
+	}{{sdl.HAT_UP, Up}, {sdl.HAT_DOWN, Down}, {sdl.HAT_LEFT, Left}, {sdl.HAT_RIGHT, Right}} {
+		was, is := prev&d.bit != 0, v&d.bit != 0
+		if was != is {
+			out = append(out, in.set(d.a, is)...)
+		}
+	}
+	return out
+}
+
+func (in *Input) controllerButton(b uint8) Action {
+	// Handheld mapping DBs (muOS, ROCKNIX, PortMaster) name buttons after
+	// their printed labels, so SDL "a" is the button marked A.
+	switch b {
+	case sdl.CONTROLLER_BUTTON_A:
+		if in.swapAB {
+			return B
+		}
+		return A
+	case sdl.CONTROLLER_BUTTON_B:
+		if in.swapAB {
+			return A
+		}
+		return B
+	case sdl.CONTROLLER_BUTTON_X:
+		return X
+	case sdl.CONTROLLER_BUTTON_Y:
+		return Y
+	case sdl.CONTROLLER_BUTTON_LEFTSHOULDER:
+		return L1
+	case sdl.CONTROLLER_BUTTON_RIGHTSHOULDER:
+		return R1
+	case sdl.CONTROLLER_BUTTON_BACK:
+		return Select
+	case sdl.CONTROLLER_BUTTON_START:
+		return Start
+	case sdl.CONTROLLER_BUTTON_GUIDE:
+		return Menu
+	case sdl.CONTROLLER_BUTTON_DPAD_UP:
+		return Up
+	case sdl.CONTROLLER_BUTTON_DPAD_DOWN:
+		return Down
+	case sdl.CONTROLLER_BUTTON_DPAD_LEFT:
+		return Left
+	case sdl.CONTROLLER_BUTTON_DPAD_RIGHT:
+		return Right
+	}
+	return None
+}
+
+func keyAction(k sdl.Keycode) Action {
+	switch k {
+	case sdl.K_UP:
+		return Up
+	case sdl.K_DOWN:
+		return Down
+	case sdl.K_LEFT:
+		return Left
+	case sdl.K_RIGHT:
+		return Right
+	case sdl.K_RETURN, sdl.K_KP_ENTER:
+		return A
+	case sdl.K_ESCAPE, sdl.K_BACKSPACE:
+		return B
+	case sdl.K_x:
+		return X
+	case sdl.K_y:
+		return Y
+	case sdl.K_q, sdl.K_PAGEUP:
+		return L1
+	case sdl.K_e, sdl.K_PAGEDOWN:
+		return R1
+	case sdl.K_TAB:
+		return Select
+	case sdl.K_SPACE:
+		return Start
+	case sdl.K_F10:
+		return Menu
+	}
+	return None
+}
+
+func (in *Input) open(index int) {
+	if sdl.IsGameController(index) {
+		if c := sdl.GameControllerOpen(index); c != nil {
+			in.controllers[c.Joystick().InstanceID()] = c
+		}
+		return
+	}
+	if j := sdl.JoystickOpen(index); j != nil {
+		in.joysticks[j.InstanceID()] = j
+	}
+}
+
+func (in *Input) close(id sdl.JoystickID) {
+	if c, ok := in.controllers[id]; ok {
+		c.Close()
+		delete(in.controllers, id)
+	}
+	if j, ok := in.joysticks[id]; ok {
+		j.Close()
+		delete(in.joysticks, id)
+	}
+}
+
+func (in *Input) closeAll() {
+	for id := range in.controllers {
+		in.close(id)
+	}
+	for id := range in.joysticks {
+		in.close(id)
+	}
+}
