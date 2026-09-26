@@ -280,6 +280,9 @@ type rommRom struct {
 	FSSizeBytes      int64  `json:"fs_size_bytes"`
 	HasMultipleFiles bool   `json:"has_multiple_files"`
 	MissingFromFS    bool   `json:"missing_from_fs"`
+	SiblingRoms      []struct {
+		ID int `json:"id"`
+	} `json:"sibling_roms"`
 }
 
 func (s *romm) Games(ctx context.Context, sys System) ([]Game, error) {
@@ -320,9 +323,11 @@ func (s *romm) Games(ctx context.Context, sys System) ([]Game, error) {
 }
 
 func (s *romm) game(r rommRom, systemID string) Game {
-	name := r.Name
-	if name == "" {
-		name = r.FSNameNoExt
+	// RomM links regional versions of a game as siblings, even when their
+	// titles differ; the lowest ID names the group for all of them.
+	group := r.ID
+	for _, s := range r.SiblingRoms {
+		group = min(group, s.ID)
 	}
 	file := r.FSName
 	if r.HasMultipleFiles {
@@ -332,7 +337,9 @@ func (s *romm) game(r rommRom, systemID string) Game {
 	u := *s.base
 	u.Path += fmt.Sprintf("/api/roms/%d/content/%s", r.ID, file)
 	return Game{
-		Name:    name,
+		Name:    r.FSNameNoExt,
+		Title:   r.Name, // metadata title, empty when unmatched
+		Group:   fmt.Sprintf("romm:%d", group),
 		File:    file,
 		Size:    r.FSSizeBytes,
 		URL:     u.String(),

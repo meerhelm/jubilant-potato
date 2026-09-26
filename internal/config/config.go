@@ -13,10 +13,15 @@ import (
 
 // Config is the on-disk configuration stored next to the binary.
 type Config struct {
-	Language string   `json:"language,omitempty"` // "en" or "ru"; empty = from $LANG
-	RomRoot  string   `json:"rom_root,omitempty"` // overrides the detected ROM root
-	SwapAB   bool     `json:"swap_ab,omitempty"`  // swap confirm/back if the pad mapping is positional
-	Sources  []Source `json:"sources"`
+	Language string `json:"language,omitempty"` // "en" or "ru"; empty = from $LANG
+	RomRoot  string `json:"rom_root,omitempty"` // overrides the detected ROM root
+	SwapAB   bool   `json:"swap_ab,omitempty"`  // swap confirm/back if the pad mapping is positional
+
+	// Variant preferences, best first, e.g. ["USA", "Europe"] and ["ru", "en"].
+	// Defaults: USA, World, Europe, Japan; the UI language, then English.
+	PreferRegions   []string `json:"prefer_regions,omitempty"`
+	PreferLanguages []string `json:"prefer_languages,omitempty"`
+	Sources         []Source `json:"sources"`
 
 	// DeviceID identifies this handheld to servers that pair devices (RomM).
 	DeviceID string `json:"device_id,omitempty"`

@@ -24,8 +24,10 @@ type System struct {
 
 // Game is a single downloadable file.
 type Game struct {
-	Name    string // display name
+	Name    string // display name of this file, tags included
 	File    string // file name to save as
+	Title   string // clean game title shared by variants; empty = parse from File
+	Group   string // variants with equal Group are the same game; empty = match by title
 	Size    int64  // bytes, 0 when unknown
 	URL     string
 	Header  http.Header // extra request headers (auth)

@@ -2,7 +2,7 @@ BUILDER := jubilant-potato-builder:arm64
 DOCKER_RUN := docker run --rm --platform linux/arm64 -v "$(CURDIR)":/src -v potato-gocache:/cache $(BUILDER)
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
-.PHONY: run test build-arm64 builder package clean
+.PHONY: run test build-arm64 builder package sort clean
 
 # Desktop preview at RG34XX resolution; config and ROMs live in ./dev.
 run:
@@ -20,6 +20,12 @@ build-arm64: builder
 
 package: build-arm64
 	VERSION=$(VERSION) ./build/package.sh
+
+# Verify and file dumps into the RomM library: make sort INPUT=~/Downloads/ROMs
+# (see tools/sort-roms.sh for DATS, SINGLE, RETAIL, REGIONS, LANGS).
+sort:
+	@test -n "$(INPUT)" || { echo "usage: make sort INPUT=<dir>"; exit 2; }
+	./tools/sort-roms.sh "$(INPUT)"
 
 clean:
 	rm -rf bin dist

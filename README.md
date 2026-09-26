@@ -48,6 +48,8 @@ On first launch the app creates an empty `config.json` next to the binary.
 | `language` | `en` or `ru` (default: from `$LANG`, else English) |
 | `rom_root` | override the detected ROM root |
 | `swap_ab` | swap confirm/back if your pad mapping is positional |
+| `prefer_regions` | variant preference, e.g. `["USA", "Europe", "Japan"]` |
+| `prefer_languages` | variant preference, e.g. `["ru", "en"]` (default: UI language, then English) |
 | `joystick_buttons` | raw button index → action (`a`, `b`, `x`, `y`, `l1`, `r1`, `select`, `start`, `menu`) for pads SDL has no mapping for |
 | `sources` | list of catalogs, see below |
 
@@ -88,6 +90,39 @@ original file in the item with a matching extension is listed.
 System IDs: `nes snes gb gbc gba nds n64 md sms gg segacd 32x saturn dc psx
 psp pce atari2600 neogeo fbneo mame`.
 
+## Game versions
+
+Regional releases, revisions, betas, hacks and translations of a game appear
+as a single row. File names are parsed in the No-Intro, Redump and GoodTools
+conventions: `(USA)`, `(En,Fr)`, `(Rev 1)`, `(Beta)`, `[T+Rus]`, `[h1]`, `[b]`.
+RomM's sibling links also merge regional titles such as *Mother 2* and
+*EarthBound*.
+
+**A** downloads the preferred version: a retail release in your preferred
+language and region, at its latest revision. **X** lists every version.
+**Start** toggles betas, demos, hacks and translations, which are hidden by
+default.
+
+## Organising a library
+
+Big dump collections come with many variants and inconsistent names.
+`make sort` verifies files against No-Intro (cartridges) and Redump (discs)
+DATs with [Igir](https://igir.io), renames them canonically, and files them
+into the RomM library by platform:
+
+```sh
+# put DAT files into ./dats first
+make sort INPUT=~/Downloads/ROMs
+SINGLE=1 RETAIL=1 REGIONS=USA,EUR,JPN make sort INPUT=~/Downloads/ROMs  # one version per game
+```
+
+Cartridge ROMs are zipped. Disc images are copied as they are and multi-disc
+games get `.m3u` playlists; converting discs to CHD with `chdman` first saves
+2–3× space. Files that match no DAT (hacks, translations, junk) stay in the
+input folder and are listed in `reports/`. Then run a scan in RomM. Keeping
+the full verified set on the server and choosing versions on the device
+(see above) loses nothing.
+
 ## Where games go
 
 | Firmware | ROM root | Folders |
@@ -107,7 +142,8 @@ ROMs are kept as downloaded. Interrupted downloads resume.
 | A | open / download |
 | B | back |
 | Y | search (on-screen keyboard) |
-| X | clear search |
+| X | all versions of a game |
+| Start | show/hide betas, demos and hacks |
 | L1 / R1 | previous / next letter |
 | Select | downloads |
 | Menu | quit |

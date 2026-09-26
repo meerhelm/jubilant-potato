@@ -146,7 +146,7 @@ func TestRommPairingAndCatalog(t *testing.T) {
 	if g.File != "game0000.gba.zip" || !g.Extract || g.URL != srv.URL+"/api/roms/1/content/game0000.gba.zip" {
 		t.Errorf("multi-file game = %+v", g)
 	}
-	if games[1].Name != "Game 0002" || games[1].Extract || games[1].Header.Get("Authorization") != "Bearer rmm_test" {
+	if games[1].Title != "Game 0002" || games[1].Name != "game0002" || games[1].Extract || games[1].Header.Get("Authorization") != "Bearer rmm_test" {
 		t.Errorf("game = %+v", games[1])
 	}
 

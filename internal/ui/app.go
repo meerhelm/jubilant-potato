@@ -10,6 +10,7 @@ import (
 
 	"github.com/veandco/go-sdl2/sdl"
 
+	"github.com/meerhelm/jubilant-potato/internal/catalog"
 	"github.com/meerhelm/jubilant-potato/internal/config"
 	"github.com/meerhelm/jubilant-potato/internal/download"
 	"github.com/meerhelm/jubilant-potato/internal/platform"
@@ -50,6 +51,8 @@ type app struct {
 
 	free     string
 	freeScan time.Time
+
+	prefs catalog.Prefs
 
 	script *script
 	shot   string // save the next frame to this path
@@ -99,6 +102,13 @@ func Run(opts Options) error {
 
 	a := &app{opts: opts, gfx: g, input: newInput(opts.Config.SwapAB, opts.Config.JoystickButtons), script: loadScript()}
 	defer a.input.closeAll()
+	a.prefs = catalog.DefaultPrefs(lang)
+	if len(opts.Config.PreferRegions) > 0 {
+		a.prefs.Regions = opts.Config.PreferRegions
+	}
+	if len(opts.Config.PreferLanguages) > 0 {
+		a.prefs.Languages = opts.Config.PreferLanguages
+	}
 	a.push(newSourcesScreen(a))
 	if len(opts.Notices) > 0 {
 		a.notify(strings.Join(opts.Notices, "; "))
