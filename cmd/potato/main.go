@@ -99,6 +99,7 @@ func main() {
 		Platform:     plat,
 		Sources:      srcs,
 		Manager:      download.NewManager(client),
+		HTTPClient:   client,
 		Window:       *window,
 		Version:      version,
 		SaveConfig:   saveConfig,

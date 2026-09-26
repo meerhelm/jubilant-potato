@@ -1,12 +1,14 @@
 package ui
 
 import (
+	"encoding/hex"
 	"errors"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/veandco/go-sdl2/sdl"
 
@@ -342,7 +344,7 @@ func (in *Input) applyMapping(id sdl.JoystickID, got map[string]string, cfg *con
 	if joy == nil {
 		return errors.New("gamepad disconnected")
 	}
-	guid := sdl.JoystickGetGUIDString(joy.GUID())
+	guid := guidString(joy.GUID())
 	mapping := buildMapping(guid, joy.Name(), sdl.GameControllerMappingForGUID(joy.GUID()), got)
 	if sdl.GameControllerAddMapping(mapping) < 0 {
 		return errors.New(sdl.GetError().Error())
@@ -361,9 +363,20 @@ func (in *Input) applyMapping(id sdl.JoystickID, got map[string]string, cfg *con
 	return nil
 }
 
+// guidString formats a joystick GUID as SDL does. go-sdl2's
+// JoystickGetGUIDString passes a too-small buffer and truncates it.
+func guidString(g sdl.JoystickGUID) string {
+	b := *(*[16]byte)(unsafe.Pointer(&g))
+	return hex.EncodeToString(b[:])
+}
+
 // addMappings installs saved per-pad mappings; call before pads are opened.
 func addMappings(cfg *config.Config) {
 	for guid, m := range cfg.ControllerMappings {
+		if len(guid) != 32 {
+			log.Printf("input: ignoring mapping with malformed GUID %q; run button setup again", guid)
+			continue
+		}
 		if sdl.GameControllerAddMapping(m) < 0 {
 			log.Printf("input: bad saved mapping for %s: %v", guid, sdl.GetError())
 		}

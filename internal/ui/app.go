@@ -4,6 +4,7 @@ package ui
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -23,9 +24,11 @@ type Options struct {
 	Platform platform.Platform
 	Sources  []source.Source
 	Manager  *download.Manager
-	Window   string // "WxH" for a desktop window; empty = fullscreen
-	Version  string
-	Notices  []string // problems to show on start (bad config entries, ...)
+	// HTTPClient is shared by catalogs and downloads.
+	HTTPClient *http.Client
+	Window     string // "WxH" for a desktop window; empty = fullscreen
+	Version    string
+	Notices    []string // problems to show on start (bad config entries, ...)
 
 	// SaveConfig persists Config after the UI changes it.
 	SaveConfig func() error

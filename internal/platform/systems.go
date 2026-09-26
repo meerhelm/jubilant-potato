@@ -125,3 +125,59 @@ func normalize(s string) string {
 	}
 	return b.String()
 }
+
+// GuessSystem finds the system named in free text such as an archive title
+// ("New Super Mario Land (Homebrew, SNES, SFC)"). The longest matching
+// alias wins, so "Game Boy Advance" beats "Game Boy"; aliases of four or
+// fewer letters only match whole words.
+func GuessSystem(text string) (System, bool) {
+	norm := normalize(text)
+	words := map[string]bool{}
+	for _, w := range strings.FieldsFunc(strings.ToLower(text), func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	}) {
+		words[w] = true
+	}
+	var best System
+	bestLen := 0
+	for _, s := range systems {
+		for _, a := range append([]string{s.ID, s.Name}, s.Aliases...) {
+			n := normalize(a)
+			hit := false
+			if len(n) <= 4 {
+				hit = words[n]
+			} else {
+				hit = strings.Contains(norm, n)
+			}
+			if hit && len(n) > bestLen {
+				best, bestLen = s, len(n)
+			}
+		}
+	}
+	return best, bestLen > 0
+}
+
+// SystemForFile guesses a file's system from a folder in its path or an
+// extension only one system uses; archives and shared extensions give no
+// answer.
+func SystemForFile(p string) (System, bool) {
+	dirs := strings.Split(path.Dir(p), "/")
+	for _, d := range dirs {
+		if s, ok := MatchSystem(d); ok {
+			return s, true
+		}
+	}
+	ext := strings.ToLower(path.Ext(p))
+	var found System
+	n := 0
+	for _, s := range systems {
+		for _, e := range s.Exts {
+			if e == ext && e != ".zip" && e != ".7z" {
+				found = s
+				n++
+				break
+			}
+		}
+	}
+	return found, n == 1
+}

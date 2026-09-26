@@ -14,7 +14,8 @@ import (
 
 // script replays actions from $POTATO_SCRIPT for testing and bug reports,
 // e.g. POTATO_SCRIPT="a,down,a,wait,shot:games.png,quit".
-// "wait" pauses one extra step; "shot:FILE" saves the next frame as PNG.
+// "wait" pauses one extra step; "shot:FILE" saves the next frame as PNG;
+// "type:TEXT" enters text into an open on-screen keyboard.
 type script struct {
 	steps []string
 	next  time.Time
@@ -41,6 +42,12 @@ func (s *script) run(a *app, now time.Time) bool {
 	case step == "wait":
 	case step == "quit":
 		a.quit = true
+	case strings.HasPrefix(step, "type:"):
+		if k, ok := a.top().(*keyboardScreen); ok {
+			for _, r := range strings.TrimPrefix(step, "type:") {
+				k.press(string(r))
+			}
+		}
 	case strings.HasPrefix(step, "shot:"):
 		a.shot = strings.TrimPrefix(step, "shot:")
 	default:

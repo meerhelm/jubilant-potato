@@ -57,3 +57,35 @@ func TestMatchSystem(t *testing.T) {
 		t.Error("MatchSystem(readme) should not match")
 	}
 }
+
+func TestGuessSystem(t *testing.T) {
+	for text, want := range map[string]string{
+		"New Super Mario Land (Homebrew, SNES, SFC)":  "snes",
+		"No-Intro Nintendo - Game Boy Advance (2024)": "gba",
+		"Best of Game Boy homebrew":                   "gb",
+		"Sega Mega Drive collection":                  "md",
+		"PS1 Redump USA":                              "psx",
+	} {
+		if s, ok := GuessSystem(text); !ok || s.ID != want {
+			t.Errorf("GuessSystem(%q) = %q, %v; want %q", text, s.ID, ok, want)
+		}
+	}
+	if s, ok := GuessSystem("business records"); ok {
+		t.Errorf("GuessSystem matched %q in unrelated text", s.ID)
+	}
+}
+
+func TestSystemForFile(t *testing.T) {
+	for p, want := range map[string]string{
+		"Nintendo - Game Boy/Tetris (World).zip": "gb",
+		"roms/Anguna.gba":                        "gba",
+		"Super Mario World (USA).sfc":            "snes",
+		"Game (USA).zip":                         "",
+		"Game.bin":                               "",
+	} {
+		s, ok := SystemForFile(p)
+		if (want == "" && ok) || (want != "" && s.ID != want) {
+			t.Errorf("SystemForFile(%q) = %q, %v; want %q", p, s.ID, ok, want)
+		}
+	}
+}
