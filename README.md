@@ -197,3 +197,15 @@ SDL_VIDEODRIVER=dummy POTATO_SCRIPT="a,wait,shot:systems.png,quit" ./potato -win
 Logs go to `potato.log` (app) and `potato.out` (launcher) in the app folder.
 Set `POTATO_DEBUG=1` to also log every button press and the action it maps to,
 which helps with `swap_ab` and `joystick_buttons` on unfamiliar pads.
+
+## License
+
+Copyright © 2026 the Jubilant Potato authors.
+
+Jubilant Potato is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option)
+any later version. See [LICENSE](LICENSE).
+
+Release packages also include `THIRD_PARTY_LICENSES.txt` for the libraries
+compiled into the binary.

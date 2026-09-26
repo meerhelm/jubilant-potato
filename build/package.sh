@@ -14,7 +14,7 @@ trap 'rm -rf "$STAGE"' EXIT
 
 # Licenses of everything linked into the binary ship with every package.
 ./tools/third-party-licenses.sh >"$STAGE/THIRD_PARTY_LICENSES.txt"
-EXTRA="config.example.json $STAGE/THIRD_PARTY_LICENSES.txt"
+EXTRA="config.example.json LICENSE $STAGE/THIRD_PARTY_LICENSES.txt"
 # Asset names carry no version so releases/latest/download links stay valid.
 rm -f "$OUT"/JubilantPotato-*
 
