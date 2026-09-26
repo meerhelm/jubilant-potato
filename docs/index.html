@@ -136,6 +136,8 @@ td small { color: var(--dim); display: block; font-size: 13px; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px 28px; margin-top: 16px; }
 .panel[hidden] { display: none; }
 .panel ol { margin: 0; padding-left: 20px; }
+.panel .dl { margin-bottom: 18px; font-family: "JetBrains Mono", monospace; font-size: 14px; }
+.build-note { color: var(--dim); margin: 28px 0 0; }
 .panel li { margin: 6px 0; }
 pre { background: #111217; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-size: 14px; margin: 14px 0 0; }
 code { font-size: .92em; background: #111217; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
@@ -311,13 +313,14 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; j
   <div class="wrap">
     <div class="eyebrow" data-i18n="inst.eyebrow">Install</div>
     <h2 class="section-title" data-i18n="inst.title">Three steps, one SD card</h2>
-    <p class="lead" data-i18n="inst.lead">Build the packages with <code>make package</code> (Docker is used to build the ARM binary), then copy the one for your firmware:</p>
+    <p class="lead" data-i18n="inst.lead">Download the package for your firmware and copy it to the SD card.</p>
     <div class="tabs" role="tablist">
       <button role="tab" aria-selected="true" data-tab="muos">muOS</button>
       <button role="tab" aria-selected="false" data-tab="rocknix">ROCKNIX</button>
       <button role="tab" aria-selected="false" data-tab="stock" data-i18n="tab.stock">Stock Linux</button>
     </div>
     <div class="panel" data-panel="muos">
+      <a class="btn primary dl" href="https://github.com/meerhelm/jubilant-potato/releases/latest/download/JubilantPotato-muos.muxapp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>JubilantPotato-muos.muxapp</a>
       <ol>
         <li data-i18n="muos.1">Copy <code>JubilantPotato-muos.muxapp</code> to the <code>ARCHIVE</code> folder on the SD card.</li>
         <li data-i18n="muos.2">Install it with Archive Manager.</li>
@@ -325,6 +328,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; j
       </ol>
     </div>
     <div class="panel" data-panel="rocknix" hidden>
+      <a class="btn primary dl" href="https://github.com/meerhelm/jubilant-potato/releases/latest/download/JubilantPotato-rocknix.zip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>JubilantPotato-rocknix.zip</a>
       <ol>
         <li data-i18n="rx.1">Unzip <code>JubilantPotato-rocknix.zip</code> into <code>/storage/roms</code>, for example over the <code>games-roms</code> network share.</li>
         <li data-i18n="rx.2">Refresh the game list (Start → Game settings → Update gamelists).</li>
@@ -332,15 +336,17 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; j
       </ol>
     </div>
     <div class="panel" data-panel="stock" hidden>
+      <a class="btn primary dl" href="https://github.com/meerhelm/jubilant-potato/releases/latest/download/JubilantPotato-stock.zip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>JubilantPotato-stock.zip</a>
       <ol>
         <li data-i18n="st.1">Unzip <code>JubilantPotato-stock.zip</code> into <code>Roms/</code> on either SD card.</li>
         <li data-i18n="st.2">Open App Center → APPS → JubilantPotato.</li>
         <li data-i18n="st.3">On the RG DS the bottom screen shows the potato while you browse.</li>
       </ol>
     </div>
+    <p class="build-note" data-i18n="inst.build">All versions and release notes are on <a href="https://github.com/meerhelm/jubilant-potato/releases">GitHub Releases</a>. Or build it yourself (Docker builds the ARM binary):</p>
     <pre><code>git clone https://github.com/meerhelm/jubilant-potato
 cd jubilant-potato
-make package      # → dist/JubilantPotato-{muos,rocknix,stock}-*.{muxapp,zip}</code></pre>
+make package      # → dist/JubilantPotato-{muos.muxapp,rocknix.zip,stock.zip}</code></pre>
   </div>
 </section>
 
@@ -404,7 +410,8 @@ const ru = {
   "dev.rgds": "RK3568, два экрана", "dev.nomuos": "muOS не поддерживает",
   "dev.other": "Другие портативки на H700 / RK3566", "dev.likely": "скорее всего", "dev.likely2": "скорее всего", "dev.likely3": "скорее всего",
   "inst.eyebrow": "Установка", "inst.title": "Три шага, одна SD-карта",
-  "inst.lead": "Соберите пакеты командой <code>make package</code> (ARM-версия собирается в Docker) и скопируйте пакет для своей прошивки:",
+  "inst.lead": "Скачайте пакет для своей прошивки и скопируйте его на SD-карту.",
+  "inst.build": "Все версии и описания изменений — на <a href=\"https://github.com/meerhelm/jubilant-potato/releases\">GitHub Releases</a>. Или соберите сами (ARM-версия собирается в Docker):",
   "tab.stock": "Стоковый Linux",
   "muos.1": "Скопируйте <code>JubilantPotato-muos.muxapp</code> в папку <code>ARCHIVE</code> на SD-карте.",
   "muos.2": "Установите его через Archive Manager.", "muos.3": "Откройте Applications → Jubilant Potato.",

@@ -19,13 +19,15 @@ needs only glibc ≥ 2.17 and the firmware's own `libSDL2`.
 
 ## Install
 
-Grab the package for your firmware from `dist/` (see *Build*).
+Download the package for your firmware from the
+[latest release](https://github.com/meerhelm/jubilant-potato/releases/latest),
+or build it yourself (see *Build*).
 
-- **muOS**: copy `JubilantPotato-muos-*.muxapp` to `ARCHIVE/` on the SD card
+- **muOS**: copy `JubilantPotato-muos.muxapp` to `ARCHIVE/` on the SD card
   and install it with Archive Manager. It appears under Applications.
-- **ROCKNIX**: unzip `JubilantPotato-rocknix-*.zip` into `/storage/roms/`
+- **ROCKNIX**: unzip `JubilantPotato-rocknix.zip` into `/storage/roms/`
   (the `roms` share over SMB). It appears under Ports.
-- **Stock**: unzip `JubilantPotato-stock-*.zip` into `Roms/` on either SD
+- **Stock**: unzip `JubilantPotato-stock.zip` into `Roms/` on either SD
   card. It appears in App Center → APPS.
 
 On first launch the app creates an empty `config.json` next to the binary.
