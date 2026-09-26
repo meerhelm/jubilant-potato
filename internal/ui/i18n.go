@@ -8,10 +8,17 @@ import (
 
 var lang = "en"
 
-func setLanguage(l string) {
+// setLanguage picks the UI language: the user's setting, then the
+// firmware's, then $LANG; anything but Russian falls back to English.
+func setLanguage(configured, firmware string) {
+	l := configured
+	if l == "" {
+		l = firmware
+	}
 	if l == "" {
 		l = strings.ToLower(os.Getenv("LANG"))
 	}
+	lang = "en"
 	if strings.HasPrefix(l, "ru") {
 		lang = "ru"
 	}

@@ -79,7 +79,7 @@ type app struct {
 // the app should restart itself (after an update). It must be called from
 // the main OS thread.
 func Run(opts Options) (restart bool, err error) {
-	setLanguage(opts.Config.Language)
+	setLanguage(opts.Config.Language, opts.Platform.Language)
 
 	if err := sdl.Init(sdl.INIT_VIDEO | sdl.INIT_JOYSTICK | sdl.INIT_GAMECONTROLLER); err != nil {
 		return false, err

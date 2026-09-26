@@ -23,6 +23,7 @@ type Platform struct {
 	Firmware Firmware
 	Device   string // human-readable device name when known
 	RomRoot  string
+	Language string // firmware UI language as an ISO 639-1 code, "" when unknown
 
 	existing map[string]string // system ID -> folder already present in RomRoot
 }
@@ -32,6 +33,7 @@ type Platform struct {
 func Detect(appDir, romRootOverride string) Platform {
 	p := Platform{Firmware: detectFirmware()}
 	p.Device = detectDevice(p.Firmware)
+	p.Language = detectLanguage(p.Firmware)
 	p.RomRoot = romRootOverride
 	if p.RomRoot == "" {
 		p.RomRoot = defaultRomRoot(p.Firmware, appDir)
@@ -86,6 +88,44 @@ func detectDevice(fw Firmware) string {
 		}
 	}
 	return ""
+}
+
+// detectLanguage reads the firmware's own UI language setting. Stock
+// Anbernic exports LANG=zh_CN whatever the menu language, so it's skipped.
+func detectLanguage(fw Firmware) string {
+	switch fw {
+	case Rocknix:
+		b, _ := os.ReadFile("/storage/.config/system/configs/system.cfg")
+		return rocknixLanguage(string(b))
+	case MuOS:
+		b, _ := os.ReadFile("/opt/muos/config/settings/general/language")
+		return muosLanguage(string(b))
+	}
+	return ""
+}
+
+// rocknixLanguage extracts "ru" from a system.cfg line "system.language=ru_RU".
+func rocknixLanguage(cfg string) string {
+	for _, line := range strings.Split(cfg, "\n") {
+		if v, ok := strings.CutPrefix(strings.TrimSpace(line), "system.language="); ok && len(v) >= 2 {
+			return strings.ToLower(v[:2])
+		}
+	}
+	return ""
+}
+
+// muosLanguage maps muOS language names ("Russian", "English (American)").
+func muosLanguage(name string) string {
+	name = strings.TrimSpace(name)
+	switch {
+	case name == "":
+		return ""
+	case strings.HasPrefix(name, "Russian"):
+		return "ru"
+	case strings.HasPrefix(name, "English"):
+		return "en"
+	}
+	return "other"
 }
 
 func defaultRomRoot(fw Firmware, appDir string) string {
