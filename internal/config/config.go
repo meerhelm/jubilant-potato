@@ -29,6 +29,10 @@ type Config struct {
 	// JoystickButtons maps raw joystick button indices to actions for pads
 	// SDL has no GameController mapping for, e.g. {"0": "b", "1": "a"}.
 	JoystickButtons map[string]string `json:"joystick_buttons,omitempty"`
+
+	// ControllerMappings are SDL GameController mappings by joystick GUID,
+	// written by the in-app button setup.
+	ControllerMappings map[string]string `json:"controller_mappings,omitempty"`
 }
 
 // Source configures one remote catalog.

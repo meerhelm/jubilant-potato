@@ -18,7 +18,7 @@ type sourcesScreen struct {
 }
 
 func newSourcesScreen(a *app) *sourcesScreen {
-	return &sourcesScreen{a: a, l: list{N: len(a.opts.Sources) + 1}}
+	return &sourcesScreen{a: a, l: list{N: len(a.opts.Sources) + 2}}
 }
 
 func (s *sourcesScreen) Title() string { return "Jubilant Potato" }
@@ -35,10 +35,13 @@ func (s *sourcesScreen) Handle(act Action) {
 	case Down:
 		s.l.Move(1)
 	case A:
-		if s.l.Sel < len(s.a.opts.Sources) {
+		switch n := len(s.a.opts.Sources); {
+		case s.l.Sel < n:
 			s.a.push(openSource(s.a, s.a.opts.Sources[s.l.Sel]))
-		} else {
+		case s.l.Sel == n:
 			s.a.push(newDownloadsScreen(s.a))
+		default:
+			s.a.push(newButtonsScreen(s.a))
 		}
 	case Select:
 		s.a.push(newDownloadsScreen(s.a))
@@ -57,6 +60,10 @@ func (s *sourcesScreen) Draw(g *Gfx, area sdl.Rect) {
 			rowText(g, r, srcs[i].Name(), "", sel)
 			return
 		}
+		if i == len(srcs)+1 {
+			rowText(g, r, "✎  "+T("Button setup"), "", sel)
+			return
+		}
 		right := ""
 		if n := s.a.opts.Manager.Active(); n > 0 {
 			right = T("Downloads (%d active)", n)
@@ -65,8 +72,8 @@ func (s *sourcesScreen) Draw(g *Gfx, area sdl.Rect) {
 	})
 	if len(srcs) == 0 {
 		msg := area
-		msg.Y += rowH + g.S(8)
-		msg.H -= rowH + g.S(8)
+		msg.Y += 2*rowH + g.S(8)
+		msg.H -= 2*rowH + g.S(8)
 		drawCentered(g, msg, colDim, T("No sources configured."), T("Add them to config.json next to the app"))
 	}
 }

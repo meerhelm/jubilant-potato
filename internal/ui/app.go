@@ -23,8 +23,12 @@ type Options struct {
 	Platform platform.Platform
 	Sources  []source.Source
 	Manager  *download.Manager
-	Window   string   // "WxH" for a desktop window; empty = fullscreen
+	Window   string // "WxH" for a desktop window; empty = fullscreen
+	Version  string
 	Notices  []string // problems to show on start (bad config entries, ...)
+
+	// SaveConfig persists Config after the UI changes it.
+	SaveConfig func() error
 }
 
 // Hint is a button legend shown in the footer.
@@ -54,6 +58,7 @@ type app struct {
 
 	prefs catalog.Prefs
 
+	second *secondary // bottom screen on dual-screen devices, may be nil
 	script *script
 	shot   string // save the next frame to this path
 }
@@ -68,6 +73,15 @@ func Run(opts Options) error {
 	}
 	defer sdl.Quit()
 	sdl.ShowCursor(sdl.DISABLE)
+	addMappings(opts.Config)
+
+	// Open the second screen first so the main window ends up focused.
+	var second *secondary
+	if opts.Window == "" {
+		if second = openSecondary(opts.Version); second != nil {
+			defer second.close()
+		}
+	}
 
 	var w, h int32 = 0, 0
 	flags := uint32(sdl.WINDOW_FULLSCREEN_DESKTOP)
@@ -100,7 +114,7 @@ func Run(opts Options) error {
 	}
 	defer g.destroy()
 
-	a := &app{opts: opts, gfx: g, input: newInput(opts.Config.SwapAB, opts.Config.JoystickButtons), script: loadScript()}
+	a := &app{opts: opts, gfx: g, input: newInput(opts.Config.SwapAB, opts.Config.JoystickButtons), script: loadScript(), second: second}
 	defer a.input.closeAll()
 	a.prefs = catalog.DefaultPrefs(lang)
 	if len(opts.Config.PreferRegions) > 0 {
@@ -155,6 +169,9 @@ func (a *app) loop() {
 		if dirty || now.Sub(lastDraw) > 500*time.Millisecond {
 			if a.draw() {
 				dirty, lastDraw = false, now
+			}
+			if a.second != nil {
+				a.second.draw(a.opts.Manager)
 			}
 		}
 		sdl.Delay(16)

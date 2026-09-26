@@ -91,7 +91,13 @@ func main() {
 		Sources:  srcs,
 		Manager:  download.NewManager(client),
 		Window:   *window,
-		Notices:  notices,
+		Version:  version,
+		SaveConfig: func() error {
+			cfgMu.Lock()
+			defer cfgMu.Unlock()
+			return cfg.Save(cfgPath)
+		},
+		Notices: notices,
 	})
 	if err != nil {
 		log.Fatal(err)

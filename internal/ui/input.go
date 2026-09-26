@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"log"
 	"os"
 	"strconv"
@@ -8,6 +9,8 @@ import (
 	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
+
+	"github.com/meerhelm/jubilant-potato/internal/config"
 )
 
 // Action is a logical button press named after the printed button labels:
@@ -56,6 +59,10 @@ type Input struct {
 	controllers map[sdl.JoystickID]*sdl.GameController
 	joysticks   map[sdl.JoystickID]*sdl.Joystick
 
+	// capture, when set, receives every event instead of action mapping
+	// (the button setup wizard).
+	capture func(sdl.Event)
+
 	held    map[Action]time.Time // action -> next repeat time
 	axisDir map[axisKey]Action
 	hatDir  map[sdl.JoystickID]uint8
@@ -85,6 +92,18 @@ var debugInput = os.Getenv("POTATO_DEBUG") != ""
 
 // Handle processes one event and returns the actions it triggers.
 func (in *Input) Handle(ev sdl.Event) []Action {
+	if in.capture != nil {
+		switch e := ev.(type) {
+		case *sdl.JoyDeviceAddedEvent:
+			in.open(int(e.Which))
+		case *sdl.JoyDeviceRemovedEvent:
+			in.close(e.Which)
+		default:
+			in.held = map[Action]time.Time{}
+			in.capture(ev)
+		}
+		return nil
+	}
 	acts := in.handle(ev)
 	if debugInput {
 		switch e := ev.(type) {
@@ -307,6 +326,47 @@ func (in *Input) close(id sdl.JoystickID) {
 	if j, ok := in.joysticks[id]; ok {
 		j.Close()
 		delete(in.joysticks, id)
+	}
+}
+
+// applyMapping installs a mapping built from wizard bindings for the pad
+// behind joystick instance id, stores it in cfg and reopens the pads so it
+// takes effect right away.
+func (in *Input) applyMapping(id sdl.JoystickID, got map[string]string, cfg *config.Config) error {
+	var joy *sdl.Joystick
+	if c, ok := in.controllers[id]; ok {
+		joy = c.Joystick()
+	} else if j, ok := in.joysticks[id]; ok {
+		joy = j
+	}
+	if joy == nil {
+		return errors.New("gamepad disconnected")
+	}
+	guid := sdl.JoystickGetGUIDString(joy.GUID())
+	mapping := buildMapping(guid, joy.Name(), sdl.GameControllerMappingForGUID(joy.GUID()), got)
+	if sdl.GameControllerAddMapping(mapping) < 0 {
+		return errors.New(sdl.GetError().Error())
+	}
+	if cfg.ControllerMappings == nil {
+		cfg.ControllerMappings = map[string]string{}
+	}
+	cfg.ControllerMappings[guid] = mapping
+	log.Printf("input: new mapping %s", mapping)
+
+	in.closeAll()
+	n := sdl.NumJoysticks()
+	for i := 0; i < n; i++ {
+		in.open(i)
+	}
+	return nil
+}
+
+// addMappings installs saved per-pad mappings; call before pads are opened.
+func addMappings(cfg *config.Config) {
+	for guid, m := range cfg.ControllerMappings {
+		if sdl.GameControllerAddMapping(m) < 0 {
+			log.Printf("input: bad saved mapping for %s: %v", guid, sdl.GetError())
+		}
 	}
 }
 

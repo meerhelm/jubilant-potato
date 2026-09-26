@@ -202,6 +202,18 @@ func (g *Gfx) textTexture(s string, size int, bold bool) *textTex {
 	return t
 }
 
+// Image uploads an RGBA image as a texture. The caller owns the texture.
+func (g *Gfx) Image(img *image.RGBA) (*sdl.Texture, error) {
+	b := img.Bounds()
+	tex, err := g.r.CreateTexture(sdl.PIXELFORMAT_ABGR8888, sdl.TEXTUREACCESS_STATIC, int32(b.Dx()), int32(b.Dy()))
+	if err != nil {
+		return nil, err
+	}
+	tex.Update(nil, unsafe.Pointer(&img.Pix[0]), img.Stride)
+	tex.SetBlendMode(sdl.BLENDMODE_BLEND)
+	return tex, nil
+}
+
 // Fill draws a solid rectangle.
 func (g *Gfx) Fill(x, y, w, h int32, c Color) {
 	g.r.SetDrawColor(c.R, c.G, c.B, c.A)
