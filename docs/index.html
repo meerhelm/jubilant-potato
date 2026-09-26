@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jubilant Potato</title>
+<meta name="description" content="A gamepad-first ROM downloader for Linux handhelds: RomM, network folders, archive.org and itch.io, straight into the right ROM folder.">
+<meta property="og:title" content="Jubilant Potato">
+<meta property="og:description" content="A gamepad-first ROM downloader for Anbernic and other Linux handhelds.">
+<meta property="og:image" content="https://meerhelm.github.io/jubilant-potato/img/logo.png">
+<link rel="icon" type="image/png" href="img/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #16171d;
+  --surface: #1e2028;
+  --surface-2: #262833;
+  --line: #343745;
+  --text: #ecebf0;
+  --dim: #9a9cab;
+  --accent: #f2b13b;
+  --accent-ink: #1b1406;
+  --ok: #6cc96e;
+  --radius: 14px;
+  --max: 1120px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img { max-width: 100%; display: block; }
+code, pre, .mono { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; }
+h1, h2, h3 { font-family: Fredoka, Inter, sans-serif; line-height: 1.15; margin: 0; }
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
+section { padding: 72px 0; }
+.eyebrow { color: var(--accent); font-weight: 600; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; }
+.section-title { font-size: clamp(28px, 4vw, 40px); margin-bottom: 14px; }
+.lead { color: var(--dim); font-size: 18px; max-width: 680px; margin: 0; }
+
+/* Nav */
+nav { position: sticky; top: 0; z-index: 10; background: rgba(22,23,29,.86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+nav .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); font-family: Fredoka, sans-serif; font-weight: 600; font-size: 19px; }
+.brand:hover { text-decoration: none; }
+.brand img { width: 32px; height: 32px; }
+.nav-links { display: flex; gap: 22px; margin-left: auto; font-size: 15px; }
+.nav-links a { color: var(--dim); }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.lang { display: flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.lang button { background: none; border: 0; color: var(--dim); font: 600 13px Inter, sans-serif; padding: 5px 11px; cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+/* Hero */
+.hero { padding: 64px 0 80px; overflow: hidden; }
+.hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
+.hero h1 { font-size: clamp(44px, 7vw, 76px); font-weight: 700; letter-spacing: -.01em; }
+.hero h1 span { color: var(--accent); }
+.hero .tagline { font-size: clamp(19px, 2.2vw, 23px); margin: 18px 0 14px; color: var(--text); font-weight: 500; }
+.hero .sub { color: var(--dim); font-size: 17px; margin: 0 0 30px; max-width: 520px; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 999px; font-weight: 600; font-size: 15px; border: 1px solid var(--line); color: var(--text); }
+.btn:hover { text-decoration: none; border-color: var(--dim); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn svg { width: 18px; height: 18px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+.chip { font-size: 13px; color: var(--dim); border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; }
+
+/* Dual-screen handheld mock-up (RG DS style) */
+.device { width: min(420px, 100%); margin: 0 auto; position: relative; }
+.device::before { content: ""; position: absolute; inset: -40px -30px; background: radial-gradient(closest-side, rgba(242,177,59,.18), transparent); z-index: -1; }
+.half { background: linear-gradient(180deg, #2c2f3b, #23252f); border: 1px solid #3a3d4b; padding: 18px; box-shadow: 0 20px 50px rgba(0,0,0,.45); }
+.half.top { border-radius: 26px 26px 10px 10px; }
+.half.bottom { border-radius: 10px 10px 30px 30px; margin-top: 10px; display: grid; grid-template-columns: 54px 1fr 54px; gap: 12px; align-items: center; }
+.screen { background: #000; border-radius: 6px; overflow: hidden; aspect-ratio: 3 / 2; border: 3px solid #0d0e12; }
+.screen img { width: 100%; height: 100%; object-fit: cover; }
+.bottom .screen { aspect-ratio: 4 / 3; display: grid; place-items: center; background: var(--bg); text-align: center; }
+.splash img { width: 44%; margin: 0 auto 6px; }
+.splash b { font-family: Fredoka, sans-serif; font-size: 17px; display: block; }
+.splash small { color: var(--dim); font-size: 11px; }
+.dpad { width: 48px; height: 48px; position: relative; }
+.dpad::before, .dpad::after { content: ""; position: absolute; background: #14151a; border-radius: 4px; }
+.dpad::before { left: 16px; top: 0; width: 16px; height: 48px; }
+.dpad::after { top: 16px; left: 0; width: 48px; height: 16px; }
+.abxy { width: 50px; height: 50px; position: relative; }
+.abxy i { position: absolute; width: 17px; height: 17px; border-radius: 50%; background: #14151a; }
+.abxy i:nth-child(1) { left: 16px; top: 0; }
+.abxy i:nth-child(2) { left: 0; top: 16px; }
+.abxy i:nth-child(3) { right: 0; top: 16px; background: var(--accent); }
+.abxy i:nth-child(4) { left: 16px; bottom: 0; }
+
+/* Sources */
+.sources { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 36px; }
+.source { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+.source h3 { font-size: 20px; margin-bottom: 6px; }
+.source p { margin: 0; color: var(--dim); font-size: 14px; }
+.source .tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+
+/* Features */
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 36px; }
+.feature { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+.feature .icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(242,177,59,.12); color: var(--accent); display: grid; place-items: center; margin-bottom: 14px; }
+.feature .icon svg { width: 22px; height: 22px; }
+.feature h3 { font-size: 19px; margin-bottom: 8px; }
+.feature p { margin: 0; color: var(--dim); font-size: 15px; }
+
+/* Gallery */
+.gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 36px; }
+.shot { margin: 0; }
+.shot img { border-radius: 10px; border: 1px solid var(--line); aspect-ratio: 3 / 2; object-fit: cover; width: 100%; }
+.shot figcaption { color: var(--dim); font-size: 14px; margin-top: 8px; }
+
+/* Devices table */
+.table-wrap { overflow-x: auto; margin-top: 30px; border: 1px solid var(--line); border-radius: var(--radius); }
+table { width: 100%; border-collapse: collapse; min-width: 560px; }
+th, td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--line); }
+th { color: var(--dim); font-weight: 600; font-size: 14px; background: var(--surface); }
+tr:last-child td { border-bottom: 0; }
+td small { color: var(--dim); display: block; font-size: 13px; }
+.yes { color: var(--ok); font-weight: 600; }
+.no { color: var(--dim); }
+
+/* Install tabs */
+.tabs { display: flex; gap: 8px; margin: 30px 0 0; flex-wrap: wrap; }
+.tabs button { background: var(--surface); border: 1px solid var(--line); color: var(--dim); font: 600 15px Inter, sans-serif; padding: 9px 18px; border-radius: 999px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px 28px; margin-top: 16px; }
+.panel[hidden] { display: none; }
+.panel ol { margin: 0; padding-left: 20px; }
+.panel li { margin: 6px 0; }
+pre { background: #111217; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-size: 14px; margin: 14px 0 0; }
+code { font-size: .92em; background: #111217; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+pre code { background: none; border: 0; padding: 0; }
+
+/* Library */
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.steps { counter-reset: s; list-style: none; padding: 0; margin: 24px 0 0; }
+.steps li { counter-increment: s; position: relative; padding-left: 44px; margin-bottom: 18px; color: var(--dim); }
+.steps li b { color: var(--text); display: block; }
+.steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--surface-2); color: var(--accent); font-weight: 700; display: grid; place-items: center; font-family: Fredoka, sans-serif; }
+
+.note { border: 1px solid var(--line); border-left: 4px solid var(--accent); background: var(--surface); border-radius: 10px; padding: 18px 22px; color: var(--dim); }
+.note b { color: var(--text); }
+
+footer { border-top: 1px solid var(--line); padding: 36px 0 48px; color: var(--dim); font-size: 14px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
+
+@media (max-width: 960px) {
+  .hero .wrap, .split { grid-template-columns: 1fr; }
+  .sources { grid-template-columns: repeat(2, 1fr); }
+  .features, .gallery { grid-template-columns: repeat(2, 1fr); }
+  .device { margin-top: 12px; }
+}
+@media (max-width: 640px) {
+  section { padding: 52px 0; }
+  .nav-links { display: none; }
+  .lang { margin-left: auto; }
+  .sources, .features, .gallery { grid-template-columns: 1fr; }
+  .panel { padding: 20px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="img/favicon.png" alt="">Jubilant Potato</a>
+    <div class="nav-links">
+      <a href="#sources" data-i18n="nav.sources">Sources</a>
+      <a href="#features" data-i18n="nav.features">Features</a>
+      <a href="#devices" data-i18n="nav.devices">Devices</a>
+      <a href="#install" data-i18n="nav.install">Install</a>
+      <a href="https://github.com/meerhelm/jubilant-potato">GitHub</a>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang="ru" aria-pressed="false">RU</button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <h1>Jubilant <span>Potato</span></h1>
+      <p class="tagline" data-i18n="hero.tagline">A gamepad-first ROM downloader for Linux handhelds.</p>
+      <p class="sub" data-i18n="hero.sub">Browse your RomM server, a network folder, archive.org or itch.io right on the handheld and get games straight into the right ROM folder. No PC, no SD-card shuffling.</p>
+      <div class="cta">
+        <a class="btn primary" href="#install">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>
+          <span data-i18n="hero.install">Install</span>
+        </a>
+        <a class="btn" href="https://github.com/meerhelm/jubilant-potato">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+          GitHub
+        </a>
+      </div>
+      <div class="chips">
+        <span class="chip">muOS</span><span class="chip">ROCKNIX</span><span class="chip" data-i18n="chip.stock">Anbernic stock Linux</span><span class="chip" data-i18n="chip.size">one 8 MB binary</span>
+      </div>
+    </div>
+
+    <div class="device" aria-hidden="true">
+      <div class="half top"><div class="screen"><img src="img/itch.png" alt=""></div></div>
+      <div class="half bottom">
+        <div class="dpad"></div>
+        <div class="screen splash"><div><img src="img/logo.png" alt=""><b>Jubilant Potato</b><small data-i18n="splash">ROM downloader</small></div></div>
+        <div class="abxy"><i></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="sources">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="sources.eyebrow">Where games come from</div>
+    <h2 class="section-title" data-i18n="sources.title">Five kinds of sources, all from the couch</h2>
+    <p class="lead" data-i18n="sources.lead">Add them on the device with “Add source”. Servers on your network are found automatically.</p>
+    <div class="sources">
+      <div class="source"><span class="tag" data-i18n="src.server">Server</span><h3>RomM</h3><p data-i18n="src.romm">Your self-hosted game library. Found on the network, paired with a QR code, and no password typed on the handheld.</p></div>
+      <div class="source"><span class="tag" data-i18n="src.share">Share</span><h3 data-i18n="src.smb.title">Network folder</h3><p data-i18n="src.smb">SMB shares on a NAS, Windows or macOS. Browse to the folder that has your system folders.</p></div>
+      <div class="source"><span class="tag" data-i18n="src.web">Web</span><h3 data-i18n="src.http.title">Web folder</h3><p data-i18n="src.http">Any directory listing: nginx, Caddy, Apache, or just <code>python -m http.server</code>.</p></div>
+      <div class="source"><span class="tag" data-i18n="src.archive">Archive</span><h3>archive.org</h3><p data-i18n="src.ia">Search collections by title. The systems inside an item are detected for you.</p></div>
+      <div class="source"><span class="tag">Homebrew</span><h3>itch.io</h3><p data-i18n="src.itch">Free homebrew for Game Boy, GBA, NES, Mega Drive and more, plus the games you own.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" style="background: var(--surface); border-block: 1px solid var(--line);">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="feat.eyebrow">Made for a D-pad</div>
+    <h2 class="section-title" data-i18n="feat.title">Everything a handheld needs, nothing it doesn't</h2>
+    <div class="features">
+      <div class="feature" style="background: var(--bg);">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg></div>
+        <h3 data-i18n="f1.t">Knows your firmware</h3>
+        <p data-i18n="f1.d">Detects muOS, ROCKNIX or stock Linux and saves each game into that firmware's folder for its system: <code>gba</code>, <code>GBA</code>, <code>SFC</code>… It reuses the folders you already have.</p>
+      </div>
+      <div class="feature" style="background: var(--bg);">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h6"/><circle cx="18" cy="16" r="3"/></svg></div>
+        <h3 data-i18n="f2.t">One row per game</h3>
+        <p data-i18n="f2.d">Regional releases, revisions, betas and hacks fold into one entry. A downloads the best version for your language and region; X shows them all.</p>
+      </div>
+      <div class="feature" style="background: var(--bg);">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 17h4v4"/></svg></div>
+        <h3 data-i18n="f3.t">QR code sign-in</h3>
+        <p data-i18n="f3.d">RomM and itch.io accounts are linked by scanning a code with your phone. You never type a password with a D-pad.</p>
+      </div>
+      <div class="feature" style="background: var(--bg);">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg></div>
+        <h3 data-i18n="f4.t">Downloads that survive sleep</h3>
+        <p data-i18n="f4.d">A download queue that resumes where it stopped, checks free space first, and unpacks disc images and DS games automatically.</p>
+      </div>
+      <div class="feature" style="background: var(--bg);">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="9" rx="1.5"/><rect x="5" y="13" width="14" height="9" rx="1.5"/></svg></div>
+        <h3 data-i18n="f5.t">Two screens, two jobs</h3>
+        <p data-i18n="f5.d">On dual-screen devices like the RG DS, the bottom screen shows the potato and your download progress.</p>
+      </div>
+      <div class="feature" style="background: var(--bg);">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></div>
+        <h3 data-i18n="f6.t">Any gamepad</h3>
+        <p data-i18n="f6.d">If buttons feel off, the built-in button setup asks for each one and remembers your pad. It also works on devices SDL has never heard of.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="gallery">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="gal.eyebrow">Screenshots</div>
+    <h2 class="section-title" data-i18n="gal.title">Straight from an RG34XX</h2>
+    <div class="gallery">
+      <figure class="shot"><img src="img/main.png" alt="Main screen with sources" loading="lazy"><figcaption data-i18n="gal.1">Your sources, downloads and settings</figcaption></figure>
+      <figure class="shot"><img src="img/itch.png" alt="Game Boy homebrew from itch.io" loading="lazy"><figcaption data-i18n="gal.2">255 free Game Boy games from itch.io</figcaption></figure>
+      <figure class="shot"><img src="img/pairing.png" alt="QR code pairing with RomM" loading="lazy"><figcaption data-i18n="gal.3">Pair with RomM by scanning a QR code</figcaption></figure>
+      <figure class="shot"><img src="img/downloads.png" alt="Download queue with progress" loading="lazy"><figcaption data-i18n="gal.4">Queue as many as you like</figcaption></figure>
+      <figure class="shot"><img src="img/search.png" alt="On-screen keyboard search" loading="lazy"><figcaption data-i18n="gal.5">Search with the on-screen keyboard</figcaption></figure>
+      <figure class="shot"><img src="img/add.png" alt="Add source menu" loading="lazy"><figcaption data-i18n="gal.6">Add sources without touching a config file</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="devices" style="background: var(--surface); border-block: 1px solid var(--line);">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="dev.eyebrow">Compatibility</div>
+    <h2 class="section-title" data-i18n="dev.title">Devices and firmware</h2>
+    <p class="lead" data-i18n="dev.lead">Any aarch64 handheld running one of these firmwares should work. The app needs only the firmware's own SDL2.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th data-i18n="dev.device">Device</th><th data-i18n="dev.stock">Stock Linux</th><th>muOS</th><th>ROCKNIX</th></tr></thead>
+        <tbody>
+          <tr><td>Anbernic RG34XX / RG34XXSP<small>Allwinner H700</small></td><td class="yes">✓</td><td class="yes">✓</td><td class="yes" data-i18n="dev.tested">✓ tested</td></tr>
+          <tr><td>Anbernic RG DS<small data-i18n="dev.rgds">RK3568, two screens</small></td><td class="yes" data-i18n="dev.tested2">✓ tested</td><td class="no" data-i18n="dev.nomuos">not supported by muOS</td><td class="yes">✓</td></tr>
+          <tr><td data-i18n="dev.other">Other H700 / RK3566 handhelds</td><td class="yes" data-i18n="dev.likely">likely</td><td class="yes" data-i18n="dev.likely2">likely</td><td class="yes" data-i18n="dev.likely3">likely</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="inst.eyebrow">Install</div>
+    <h2 class="section-title" data-i18n="inst.title">Three steps, one SD card</h2>
+    <p class="lead" data-i18n="inst.lead">Build the packages with <code>make package</code> (Docker is used to build the ARM binary), then copy the one for your firmware:</p>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="muos">muOS</button>
+      <button role="tab" aria-selected="false" data-tab="rocknix">ROCKNIX</button>
+      <button role="tab" aria-selected="false" data-tab="stock" data-i18n="tab.stock">Stock Linux</button>
+    </div>
+    <div class="panel" data-panel="muos">
+      <ol>
+        <li data-i18n="muos.1">Copy <code>JubilantPotato-muos.muxapp</code> to the <code>ARCHIVE</code> folder on the SD card.</li>
+        <li data-i18n="muos.2">Install it with Archive Manager.</li>
+        <li data-i18n="muos.3">Open Applications → Jubilant Potato.</li>
+      </ol>
+    </div>
+    <div class="panel" data-panel="rocknix" hidden>
+      <ol>
+        <li data-i18n="rx.1">Unzip <code>JubilantPotato-rocknix.zip</code> into <code>/storage/roms</code>, for example over the <code>games-roms</code> network share.</li>
+        <li data-i18n="rx.2">Refresh the game list (Start → Game settings → Update gamelists).</li>
+        <li data-i18n="rx.3">Open Ports → JubilantPotato.</li>
+      </ol>
+    </div>
+    <div class="panel" data-panel="stock" hidden>
+      <ol>
+        <li data-i18n="st.1">Unzip <code>JubilantPotato-stock.zip</code> into <code>Roms/</code> on either SD card.</li>
+        <li data-i18n="st.2">Open App Center → APPS → JubilantPotato.</li>
+        <li data-i18n="st.3">On the RG DS the bottom screen shows the potato while you browse.</li>
+      </ol>
+    </div>
+    <pre><code>git clone https://github.com/meerhelm/jubilant-potato
+cd jubilant-potato
+make package      # → dist/JubilantPotato-{muos,rocknix,stock}-*.{muxapp,zip}</code></pre>
+  </div>
+</section>
+
+<section id="library" style="background: var(--surface); border-block: 1px solid var(--line);">
+  <div class="wrap split">
+    <div>
+      <div class="eyebrow" data-i18n="lib.eyebrow">Bonus</div>
+      <h2 class="section-title" data-i18n="lib.title">Tame a messy library</h2>
+      <p class="lead" data-i18n="lib.lead">Thousands of files with odd names and a dozen versions of each game? The repo includes a helper that turns them into a clean RomM library.</p>
+    </div>
+    <ol class="steps">
+      <li><b data-i18n="lib.1t">Verify</b><span data-i18n="lib.1d">Files are checked against No-Intro and Redump DATs by hash with Igir and renamed canonically.</span></li>
+      <li><b data-i18n="lib.2t">Sort</b><span data-i18n="lib.2d">Games are filed into RomM's folders by platform. Anything unknown is listed in a report.</span></li>
+      <li><b data-i18n="lib.3t">Play</b><span data-i18n="lib.3d">Scan in RomM. The handheld groups versions and picks the right one for you.</span></li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="note" data-i18n-html="legal"><b>Play fair.</b> Jubilant Potato doesn't ship or link to any games. Use it with dumps of games you own, homebrew, and free releases, and support the developers who make them.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="brand"><img src="img/favicon.png" alt="">Jubilant Potato</span>
+    <span><a href="https://github.com/meerhelm/jubilant-potato">GitHub</a> · <a href="https://github.com/meerhelm/jubilant-potato#readme" data-i18n="foot.docs">Documentation</a> · <a href="https://github.com/meerhelm/jubilant-potato/issues" data-i18n="foot.issues">Report an issue</a></span>
+  </div>
+</footer>
+
+<script>
+const ru = {
+  "nav.sources": "Источники", "nav.features": "Возможности", "nav.devices": "Устройства", "nav.install": "Установка",
+  "hero.tagline": "Загрузчик ROM-ов для Linux-портативок, созданный под геймпад.",
+  "hero.sub": "Открывайте свой сервер RomM, сетевую папку, archive.org или itch.io прямо на приставке. Игры ложатся сразу в нужную папку. Без компьютера и без возни с SD-картой.",
+  "hero.install": "Установить", "chip.stock": "стоковый Linux Anbernic", "chip.size": "один файл на 8 МБ",
+  "splash": "Загрузчик ROM-ов",
+  "sources.eyebrow": "Откуда берутся игры", "sources.title": "Пять видов источников, всё с дивана",
+  "sources.lead": "Добавляются на самой приставке через «Добавить источник». Серверы в сети находятся автоматически.",
+  "src.server": "Сервер", "src.share": "Шара", "src.web": "Веб", "src.archive": "Архив",
+  "src.romm": "Ваша собственная библиотека игр. Приставка сама находит сервер в сети и подключается по QR-коду, пароль вводить не нужно.",
+  "src.smb.title": "Сетевая папка", "src.smb": "SMB-шары на NAS, Windows или macOS. Выберите папку, в которой лежат папки систем.",
+  "src.http.title": "Веб-папка", "src.http": "Любой список файлов: nginx, Caddy, Apache или просто <code>python -m http.server</code>.",
+  "src.ia": "Поиск коллекций по названию. Системы внутри коллекции определяются автоматически.",
+  "src.itch": "Бесплатный homebrew для Game Boy, GBA, NES, Mega Drive и других систем, а также купленные вами игры.",
+  "feat.eyebrow": "Сделано под крестовину", "feat.title": "Всё, что нужно портативке, и ничего лишнего",
+  "f1.t": "Знает вашу прошивку", "f1.d": "Определяет muOS, ROCKNIX или стоковый Linux и кладёт игру в папку системы этой прошивки: <code>gba</code>, <code>GBA</code>, <code>SFC</code>… Если такие папки у вас уже есть, использует их.",
+  "f2.t": "Одна строка на игру", "f2.d": "Региональные версии, ревизии, беты и хаки собраны в одну строку. A скачивает лучшую версию для вашего языка и региона, X показывает все.",
+  "f3.t": "Вход по QR-коду", "f3.d": "Аккаунты RomM и itch.io привязываются сканированием кода с телефона. Пароль крестовиной вводить не придётся.",
+  "f4.t": "Загрузки переживают сон", "f4.d": "Очередь загрузок продолжает с места обрыва, заранее проверяет свободное место и сама распаковывает образы дисков и игры DS.",
+  "f5.t": "Два экрана, две задачи", "f5.d": "На устройствах с двумя экранами, как RG DS, нижний экран показывает картошку и прогресс загрузки.",
+  "f6.t": "Любой геймпад", "f6.d": "Если кнопки перепутаны, встроенная настройка по очереди спросит каждую и запомнит ваш геймпад. Работает даже на устройствах, которых SDL не знает.",
+  "gal.eyebrow": "Скриншоты", "gal.title": "Прямо с RG34XX",
+  "gal.1": "Ваши источники, загрузки и настройки", "gal.2": "255 бесплатных игр для Game Boy с itch.io",
+  "gal.3": "Подключение к RomM по QR-коду", "gal.4": "Ставьте в очередь сколько угодно",
+  "gal.5": "Поиск с экранной клавиатуры", "gal.6": "Источники добавляются без правки конфигов",
+  "dev.eyebrow": "Совместимость", "dev.title": "Устройства и прошивки",
+  "dev.lead": "Должна работать любая aarch64-портативка с одной из этих прошивок. Приложению нужна только SDL2 из самой прошивки.",
+  "dev.device": "Устройство", "dev.stock": "Стоковый Linux", "dev.tested": "✓ проверено", "dev.tested2": "✓ проверено",
+  "dev.rgds": "RK3568, два экрана", "dev.nomuos": "muOS не поддерживает",
+  "dev.other": "Другие портативки на H700 / RK3566", "dev.likely": "скорее всего", "dev.likely2": "скорее всего", "dev.likely3": "скорее всего",
+  "inst.eyebrow": "Установка", "inst.title": "Три шага, одна SD-карта",
+  "inst.lead": "Соберите пакеты командой <code>make package</code> (ARM-версия собирается в Docker) и скопируйте пакет для своей прошивки:",
+  "tab.stock": "Стоковый Linux",
+  "muos.1": "Скопируйте <code>JubilantPotato-muos.muxapp</code> в папку <code>ARCHIVE</code> на SD-карте.",
+  "muos.2": "Установите его через Archive Manager.", "muos.3": "Откройте Applications → Jubilant Potato.",
+  "rx.1": "Распакуйте <code>JubilantPotato-rocknix.zip</code> в <code>/storage/roms</code>, например через сетевую шару <code>games-roms</code>.",
+  "rx.2": "Обновите список игр (Start → Game settings → Update gamelists).", "rx.3": "Откройте Ports → JubilantPotato.",
+  "st.1": "Распакуйте <code>JubilantPotato-stock.zip</code> в <code>Roms/</code> на любой из SD-карт.",
+  "st.2": "Откройте App Center → APPS → JubilantPotato.", "st.3": "На RG DS, пока вы выбираете игры, на нижнем экране будет картошка.",
+  "lib.eyebrow": "Бонус", "lib.title": "Наведите порядок в библиотеке",
+  "lib.lead": "Тысячи файлов со странными именами и по дюжине версий каждой игры? В репозитории есть помощник, который превратит их в аккуратную библиотеку RomM.",
+  "lib.1t": "Сверка", "lib.1d": "Igir сверяет файлы с DAT-базами No-Intro и Redump по хешам и даёт им канонические имена.",
+  "lib.2t": "Сортировка", "lib.2d": "Игры раскладываются по папкам платформ RomM. Всё неопознанное попадает в отчёт.",
+  "lib.3t": "Игра", "lib.3d": "Запустите сканирование в RomM. Приставка сама сгруппирует версии и выберет нужную.",
+  "legal": "<b>Играйте честно.</b> Jubilant Potato не содержит игр и не ссылается на них. Используйте его с дампами своих картриджей и дисков, homebrew и бесплатными релизами, и поддерживайте разработчиков.",
+  "foot.docs": "Документация", "foot.issues": "Сообщить о проблеме"
+};
+
+const en = {};
+document.querySelectorAll("[data-i18n]").forEach(el => en[el.dataset.i18n] = el.innerHTML);
+document.querySelectorAll("[data-i18n-html]").forEach(el => en[el.dataset.i18nHtml] = el.innerHTML);
+
+function setLang(lang) {
+  const dict = lang === "ru" ? ru : en;
+  document.querySelectorAll("[data-i18n]").forEach(el => { if (dict[el.dataset.i18n]) el.innerHTML = dict[el.dataset.i18n]; });
+  document.querySelectorAll("[data-i18n-html]").forEach(el => { if (dict[el.dataset.i18nHtml]) el.innerHTML = dict[el.dataset.i18nHtml]; });
+  document.documentElement.lang = lang;
+  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang === lang));
+  try { localStorage.setItem("lang", lang); } catch (e) {}
+}
+
+let saved = null;
+try { saved = localStorage.getItem("lang"); } catch (e) {}
+setLang(saved || ((navigator.language || "").toLowerCase().startsWith("ru") ? "ru" : "en"));
+document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => setLang(b.dataset.lang)));
+
+document.querySelectorAll(".tabs button").forEach(tab => tab.addEventListener("click", () => {
+  document.querySelectorAll(".tabs button").forEach(t => t.setAttribute("aria-selected", t === tab));
+  document.querySelectorAll(".panel").forEach(p => p.hidden = p.dataset.panel !== tab.dataset.tab);
+}));
+</script>
+</body>
+</html>
