@@ -5,11 +5,11 @@ cd "$(dirname "$0")/.."
 MODCACHE=$(go env GOMODCACHE)
 echo "Jubilant Potato includes the following third-party software."
 printf '\n================================================================\nThe Go programming language (runtime and standard library)\n================================================================\n\n'
-printf '\n================================================================\nNoto Sans SC / Noto Sans TC (subset, internal/ui/fonts)\n================================================================\n\n'
-cat internal/ui/fonts/OFL.txt
 GOROOT=$(go env GOROOT)
 # Homebrew keeps Go's LICENSE one level above GOROOT.
 cat "$GOROOT/LICENSE" 2>/dev/null || cat "$GOROOT/../LICENSE"
+printf '\n================================================================\nNoto Sans SC / Noto Sans TC (subset, internal/ui/fonts)\n================================================================\n\n'
+cat internal/ui/fonts/OFL.txt
 GOOS=linux GOARCH=arm64 CGO_ENABLED=1 go list -deps -f '{{with .Module}}{{if not .Main}}{{.Path}} {{.Version}}{{end}}{{end}}' ./cmd/potato |
 	sort -u | while read -r path version; do
 		dir="$MODCACHE/$(echo "$path" | sed 's/[A-Z]/!&/g' | tr 'A-Z' 'a-z')@$version"
