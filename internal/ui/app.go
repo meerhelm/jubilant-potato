@@ -112,13 +112,10 @@ func (a *app) loop() {
 	var lastDraw time.Time
 	for !a.quit {
 		for ev := sdl.PollEvent(); ev != nil; ev = sdl.PollEvent() {
-			switch e := ev.(type) {
+			switch ev.(type) {
 			case *sdl.QuitEvent:
 				a.quit = true
 			case *sdl.WindowEvent:
-				if e.Event == sdl.WINDOWEVENT_SIZE_CHANGED {
-					a.gfx.W, a.gfx.H, _ = a.gfx.r.GetOutputSize()
-				}
 				dirty = true
 			}
 			for _, act := range a.input.Handle(ev) {
@@ -146,8 +143,9 @@ func (a *app) loop() {
 		}
 		// Redraw on change, and periodically for progress/free space.
 		if dirty || now.Sub(lastDraw) > 500*time.Millisecond {
-			a.draw()
-			dirty, lastDraw = false, now
+			if a.draw() {
+				dirty, lastDraw = false, now
+			}
 		}
 		sdl.Delay(16)
 	}
@@ -177,9 +175,12 @@ func (a *app) notify(msg string) {
 	a.toastUntil = time.Now().Add(3 * time.Second)
 }
 
-func (a *app) draw() {
+// draw renders a frame and reports whether it could.
+func (a *app) draw() bool {
 	g := a.gfx
-	g.Clear()
+	if !g.Clear() {
+		return false
+	}
 
 	headerH, footerH := g.S(40), g.S(34)
 	pad := g.S(12)
@@ -225,6 +226,7 @@ func (a *app) draw() {
 		a.shot = ""
 	}
 	g.Present()
+	return true
 }
 
 func drawHint(g *Gfx, x, y, h int32, hint Hint) int32 {

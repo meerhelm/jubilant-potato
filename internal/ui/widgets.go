@@ -40,6 +40,9 @@ func (l *list) SetN(n int) {
 
 // Draw renders visible rows inside area, calling row for each one.
 func (l *list) Draw(g *Gfx, area sdl.Rect, rowH int32, row func(i int, r sdl.Rect, selected bool)) {
+	if rowH <= 0 || area.H <= 0 {
+		return
+	}
 	l.visible = max(int(area.H/rowH), 1)
 	if l.Sel < l.Top {
 		l.Top = l.Sel

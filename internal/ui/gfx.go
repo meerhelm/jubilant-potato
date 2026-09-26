@@ -69,17 +69,32 @@ func newGfx(win *sdl.Window, r *sdl.Renderer) (*Gfx, error) {
 	if err != nil {
 		return nil, err
 	}
-	w, h, err := r.GetOutputSize()
-	if err != nil {
-		return nil, err
-	}
-	return &Gfx{
-		win: win, r: r, W: w, H: h,
-		scale:   float64(h) / 480,
-		regular: reg, bold: bold,
+	g := &Gfx{
+		win: win, r: r, regular: reg, bold: bold,
 		faces: map[textKey]font.Face{},
 		cache: map[textKey]*textTex{},
-	}, nil
+	}
+	g.syncSize()
+	return g, nil
+}
+
+// syncSize picks up the current output size. Under Wayland the window is
+// 0x0 until the compositor configures it, and it may change later, so this
+// runs every frame; it reports whether there is anything to draw on.
+func (g *Gfx) syncSize() bool {
+	w, h, err := g.r.GetOutputSize()
+	if err != nil || w <= 0 || h <= 0 {
+		return false
+	}
+	if w == g.W && h == g.H {
+		return true
+	}
+	g.W, g.H = w, h
+	g.scale = float64(h) / 480
+	g.destroy() // glyphs are rasterized for the old scale
+	g.faces = map[textKey]font.Face{}
+	g.cache = map[textKey]*textTex{}
+	return true
 }
 
 // S scales a length given at the 480p reference height.
@@ -193,12 +208,16 @@ func (g *Gfx) Fill(x, y, w, h int32, c Color) {
 	g.r.FillRect(&sdl.Rect{X: x, Y: y, W: w, H: h})
 }
 
-// Clear starts a new frame.
-func (g *Gfx) Clear() {
+// Clear starts a new frame. It returns false while the window has no size yet.
+func (g *Gfx) Clear() bool {
+	if !g.syncSize() {
+		return false
+	}
 	g.frame++
 	g.r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
 	g.r.SetDrawColor(colBg.R, colBg.G, colBg.B, colBg.A)
 	g.r.Clear()
+	return true
 }
 
 // Present shows the frame and evicts text textures unused for a while.
