@@ -3,3 +3,7 @@
 /dev/
 *.part
 .DS_Store
+/server/romm/.env
+/server/romm/library/
+/server/romm/assets/
+/server/romm/config/

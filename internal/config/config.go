@@ -2,6 +2,8 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +18,9 @@ type Config struct {
 	SwapAB   bool     `json:"swap_ab,omitempty"`  // swap confirm/back if the pad mapping is positional
 	Sources  []Source `json:"sources"`
 
+	// DeviceID identifies this handheld to servers that pair devices (RomM).
+	DeviceID string `json:"device_id,omitempty"`
+
 	// JoystickButtons maps raw joystick button indices to actions for pads
 	// SDL has no GameController mapping for, e.g. {"0": "b", "1": "a"}.
 	JoystickButtons map[string]string `json:"joystick_buttons,omitempty"`
@@ -24,13 +29,17 @@ type Config struct {
 // Source configures one remote catalog.
 type Source struct {
 	Name     string `json:"name"`
-	Type     string `json:"type"` // "http" or "archive.org"
+	Type     string `json:"type"` // "http", "archive.org" or "romm"
 	Disabled bool   `json:"disabled,omitempty"`
 
 	// http: root URL of a directory listing with one folder per system.
+	// romm: server URL, e.g. http://192.168.1.10:8080.
 	URL      string `json:"url,omitempty"`
 	Username string `json:"username,omitempty"`
 	Password string `json:"password,omitempty"`
+
+	// romm: API token obtained by pairing; filled in by the app.
+	Token string `json:"token,omitempty"`
 
 	// http: optional explicit system ID -> path under URL. When empty,
 	// subfolders of URL are matched to systems by name.
@@ -59,8 +68,7 @@ func (l *StringList) UnmarshalJSON(b []byte) error {
 func Load(path string) (*Config, error) {
 	b, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
-		c := &Config{Sources: []Source{}}
-		return c, c.Save(path)
+		b, err = []byte(`{"sources": []}`), nil
 	}
 	if err != nil {
 		return nil, err
@@ -69,14 +77,31 @@ func Load(path string) (*Config, error) {
 	if err := json.Unmarshal(b, &c); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
+	if c.DeviceID == "" {
+		c.DeviceID = newDeviceID()
+		if err := c.Save(path); err != nil {
+			return nil, err
+		}
+	}
 	return &c, nil
 }
 
-// Save writes the config as indented JSON.
+func newDeviceID() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return "potato-" + hex.EncodeToString(b)
+}
+
+// Save writes the config as indented JSON, atomically so a power loss on a
+// handheld can't leave a truncated file behind.
 func (c *Config) Save(path string) error {
 	b, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(b, '\n'), 0o644)
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, append(b, '\n'), 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
 }

@@ -60,6 +60,26 @@ folder. Subfolders are matched to systems by name: `gba`, `GBA`,
 explicitly, use `systems`, where each system ID maps to one or more paths under
 `url`. Basic auth is available through `username`/`password`.
 
+### Source: `romm`
+
+A [RomM](https://romm.app) server (5.3+). Set only the URL:
+
+```json
+{ "name": "RomM", "type": "romm", "url": "http://192.168.1.10:8080" }
+```
+
+The first time you open it, the handheld shows a QR code and a short code.
+Scan the code with your phone, or open the RomM page shown on screen, and
+approve the device. The app stores the token in `config.json`. Revoking the
+device in RomM makes it ask to pair again. Platforms are matched to ROM
+folders by their RomM slug, and multi-file games arrive as a zip that gets
+extracted.
+
+To run RomM locally, use `./server/romm/setup.sh`: it generates secrets,
+starts RomM 5.3.1 with MariaDB on port 8080, and serves the library from
+`server/romm/library/roms/<platform>/`. Set `ROMM_LIBRARY` to point it at your
+own library.
+
 ### Source: `archive.org`
 
 `systems` maps a system ID to one or more archive.org item identifiers. Every

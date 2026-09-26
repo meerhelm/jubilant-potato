@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 
 	"github.com/meerhelm/jubilant-potato/internal/config"
 	"github.com/meerhelm/jubilant-potato/internal/download"
@@ -15,6 +16,9 @@ import (
 	"github.com/meerhelm/jubilant-potato/internal/source"
 	"github.com/meerhelm/jubilant-potato/internal/ui"
 )
+
+// version is set at build time with -ldflags "-X main.version=...".
+var version = "dev"
 
 // SDL must run on the main OS thread.
 func init() { runtime.LockOSThread() }
@@ -52,13 +56,27 @@ func main() {
 	}
 
 	client := source.NewHTTPClient()
+	info := source.ClientInfo{
+		DeviceID: cfg.DeviceID,
+		Name:     deviceName(plat),
+		Platform: string(plat.Firmware),
+		Version:  version,
+	}
+	cfgPath := filepath.Join(appDir, "config.json")
+	var cfgMu sync.Mutex
 	var srcs []source.Source
 	var notices []string
-	for _, c := range cfg.Sources {
+	for i, c := range cfg.Sources {
 		if c.Disabled {
 			continue
 		}
-		s, err := source.New(c, client)
+		saveToken := func(tok string) error {
+			cfgMu.Lock()
+			defer cfgMu.Unlock()
+			cfg.Sources[i].Token = tok
+			return cfg.Save(cfgPath)
+		}
+		s, err := source.New(c, client, info, saveToken)
 		if err != nil {
 			log.Print(err)
 			notices = append(notices, err.Error())
@@ -78,4 +96,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+// deviceName is how the handheld shows up in a server's device list.
+func deviceName(p platform.Platform) string {
+	if p.Device != "" {
+		return p.Device
+	}
+	if h, err := os.Hostname(); err == nil {
+		return h
+	}
+	return "Jubilant Potato"
 }

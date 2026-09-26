@@ -16,7 +16,7 @@ builder:
 	docker build --platform linux/arm64 -t $(BUILDER) build
 
 build-arm64: builder
-	$(DOCKER_RUN) go build -trimpath -ldflags "-s -w" -o dist/arm64/potato ./cmd/potato
+	$(DOCKER_RUN) go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o dist/arm64/potato ./cmd/potato
 
 package: build-arm64
 	VERSION=$(VERSION) ./build/package.sh

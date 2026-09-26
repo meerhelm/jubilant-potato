@@ -24,12 +24,13 @@ type System struct {
 
 // Game is a single downloadable file.
 type Game struct {
-	Name   string // display name
-	File   string // file name to save as
-	Size   int64  // bytes, 0 when unknown
-	URL    string
-	Header http.Header // extra request headers (auth)
-	System string      // canonical platform system ID
+	Name    string // display name
+	File    string // file name to save as
+	Size    int64  // bytes, 0 when unknown
+	URL     string
+	Header  http.Header // extra request headers (auth)
+	System  string      // canonical platform system ID
+	Extract bool        // always unpack after download (multi-file bundles)
 }
 
 // Source is a remote catalog of games.
@@ -48,13 +49,16 @@ func NewHTTPClient() *http.Client {
 	return &http.Client{Transport: tr}
 }
 
-// New builds a source from its configuration.
-func New(c config.Source, client *http.Client) (Source, error) {
+// New builds a source from its configuration. saveToken persists
+// credentials obtained by pairing.
+func New(c config.Source, client *http.Client, info ClientInfo, saveToken func(string) error) (Source, error) {
 	switch strings.ToLower(c.Type) {
 	case "http", "http-index":
 		return newHTTPIndex(c, client)
 	case "archive.org", "archiveorg":
 		return newArchiveOrg(c, client), nil
+	case "romm":
+		return newRomm(c, client, info, saveToken)
 	}
 	return nil, fmt.Errorf("source %q: unknown type %q", c.Name, c.Type)
 }

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,7 +41,7 @@ func (s *sourcesScreen) Handle(act Action) {
 		s.l.Move(1)
 	case A:
 		if s.l.Sel < len(s.a.opts.Sources) {
-			s.a.push(newSystemsScreen(s.a, s.a.opts.Sources[s.l.Sel]))
+			s.a.push(openSource(s.a, s.a.opts.Sources[s.l.Sel]))
 		} else {
 			s.a.push(newDownloadsScreen(s.a))
 		}
@@ -75,6 +76,15 @@ func (s *sourcesScreen) Draw(g *Gfx, area sdl.Rect) {
 	}
 }
 
+// openSource returns the first screen for a source: pairing if it needs
+// credentials, otherwise its system list.
+func openSource(a *app, src source.Source) Screen {
+	if p, ok := src.(source.Pairer); ok && p.NeedsPairing() {
+		return newPairingScreen(a, src, p)
+	}
+	return newSystemsScreen(a, src)
+}
+
 // ---- Systems ---------------------------------------------------------------
 
 type systemsScreen struct {
@@ -98,6 +108,12 @@ func (s *systemsScreen) Title() string { return s.src.Name() }
 
 func (s *systemsScreen) Update() bool {
 	if s.t.Poll() {
+		if p, ok := s.src.(source.Pairer); ok && errors.Is(s.t.err, source.ErrNeedsPairing) {
+			// Token missing or revoked on the server: pair again.
+			s.a.pop()
+			s.a.push(newPairingScreen(s.a, s.src, p))
+			return true
+		}
 		s.l.SetN(len(s.t.val))
 		return true
 	}
@@ -293,7 +309,7 @@ func (s *gamesScreen) download() {
 	case s.a.opts.Manager.Pending(g.URL):
 		s.a.notify(T("Already in queue"))
 	default:
-		s.a.opts.Manager.Enqueue(g, s.dest, s.psys.Extract)
+		s.a.opts.Manager.Enqueue(g, s.dest, s.psys.Extract || g.Extract)
 		s.a.notify(T("Queued: %s", g.Name))
 	}
 }
