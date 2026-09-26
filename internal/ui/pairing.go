@@ -143,20 +143,8 @@ func (s *pairingScreen) Draw(g *Gfx, area sdl.Rect) {
 
 	pad := g.S(20)
 
-	// QR code on a white quiet zone, as large as the area allows.
-	side := min(area.H-2*pad, area.W/2-pad)
-	modules := int32(s.qr.Size + 4)
-	cell := side / modules
-	side = cell * modules
-	qx, qy := area.X+pad, area.Y+(area.H-side)/2
-	g.Fill(qx, qy, side, side, Color{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
-	for y := 0; y < s.qr.Size; y++ {
-		for x := 0; x < s.qr.Size; x++ {
-			if s.qr.Black(x, y) {
-				g.Fill(qx+int32(x+2)*cell, qy+int32(y+2)*cell, cell, cell, Color{A: 0xff})
-			}
-		}
-	}
+	qx := area.X + pad
+	qy, side := drawQR(g, s.qr, qx, area.Y+pad, min(area.H-2*pad, area.W/2-pad), area.H-2*pad)
 
 	// Instructions to the right of the code.
 	tx := qx + side + pad
@@ -180,4 +168,23 @@ func (s *pairingScreen) Draw(g *Gfx, area sdl.Rect) {
 	left := max(int(time.Until(s.pairing.Expires).Seconds()), 0)
 	line(T("Waiting for approval…"), SizeSmall, false, colText, 2)
 	line(T("Code expires in %s", fmt.Sprintf("%d:%02d", left/60, left%60)), SizeSmall, false, colDim, 0)
+}
+
+// drawQR draws code on a white quiet zone at x, at most maxSide wide,
+// centred vertically in a band of height band starting at top. It returns
+// the code's top edge and side length.
+func drawQR(g *Gfx, code *qr.Code, x, top, maxSide, band int32) (y, side int32) {
+	modules := int32(code.Size + 4)
+	cell := maxSide / modules
+	side = cell * modules
+	y = top + (band-side)/2
+	g.Fill(x, y, side, side, Color{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+	for my := 0; my < code.Size; my++ {
+		for mx := 0; mx < code.Size; mx++ {
+			if code.Black(mx, my) {
+				g.Fill(x+int32(mx+2)*cell, y+int32(my+2)*cell, cell, cell, Color{A: 0xff})
+			}
+		}
+	}
+	return y, side
 }

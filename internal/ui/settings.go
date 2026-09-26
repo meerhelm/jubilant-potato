@@ -66,7 +66,7 @@ func (a *app) reloadSources() {
 		a.notify(strings.Join(notices, "; "))
 	}
 	if root, ok := a.stack[0].(*sourcesScreen); ok {
-		root.l.SetN(len(a.opts.Sources) + 3)
+		root.l.SetN(len(a.opts.Sources) + extraRows)
 	}
 }
 

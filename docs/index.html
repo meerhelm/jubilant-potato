@@ -150,6 +150,14 @@ pre code { background: none; border: 0; padding: 0; }
 .steps li b { color: var(--text); display: block; }
 .steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--surface-2); color: var(--accent); font-weight: 700; display: grid; place-items: center; font-family: Fredoka, sans-serif; }
 
+.nav-coffee { display: inline-flex; align-items: center; gap: 6px; color: var(--accent) !important; font-weight: 600; }
+.nav-coffee svg { width: 17px; height: 17px; }
+.support { display: grid; grid-template-columns: auto 1fr auto; gap: 28px; align-items: center; background: linear-gradient(135deg, rgba(242,177,59,.14), rgba(242,177,59,.03)); border: 1px solid rgba(242,177,59,.35); border-radius: 20px; padding: 32px 36px; }
+.support img { width: 120px; height: 120px; }
+.support .section-title { margin-bottom: 8px; }
+.btn.coffee { background: #ffdd00; color: #1b1406; border-color: #ffdd00; white-space: nowrap; }
+.btn.coffee:hover { filter: brightness(1.05); }
+@media (max-width: 760px) { .support { grid-template-columns: 1fr; text-align: left; padding: 26px; } .support img { width: 88px; height: 88px; } }
 .note { border: 1px solid var(--line); border-left: 4px solid var(--accent); background: var(--surface); border-radius: 10px; padding: 18px 22px; color: var(--dim); }
 .note b { color: var(--text); }
 
@@ -182,6 +190,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; j
       <a href="#devices" data-i18n="nav.devices">Devices</a>
       <a href="#install" data-i18n="nav.install">Install</a>
       <a href="https://github.com/meerhelm/jubilant-potato">GitHub</a>
+      <a class="nav-coffee" href="https://buymeacoffee.com/f2mzlbyhvc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg><span data-i18n="nav.coffee">Buy me a coffee</span></a>
     </div>
     <div class="lang" role="group" aria-label="Language">
       <button type="button" data-lang="en" aria-pressed="true">EN</button>
@@ -365,7 +374,20 @@ make package      # → dist/JubilantPotato-{muos.muxapp,rocknix.zip,stock.zip}<
   </div>
 </section>
 
-<section>
+<section id="support">
+  <div class="wrap">
+    <div class="support">
+      <img src="img/logo.png" alt="" width="120" height="120">
+      <div>
+        <h2 class="section-title" data-i18n="sup.title">Keep the potato jubilant</h2>
+        <p class="lead" data-i18n="sup.lead">Jubilant Potato is free and open source. A coffee pays for test devices and support for more handhelds. Thank you!</p>
+      </div>
+      <a class="btn coffee" href="https://buymeacoffee.com/f2mzlbyhvc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg><span data-i18n="sup.btn">Buy me a coffee</span></a>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top: 0;">
   <div class="wrap">
     <div class="note" data-i18n-html="legal"><b>Play fair.</b> Jubilant Potato doesn't ship or link to any games. Use it with dumps of games you own, homebrew, and free releases, and support the developers who make them.</div>
   </div>
@@ -425,7 +447,11 @@ const ru = {
   "lib.2t": "Сортировка", "lib.2d": "Игры раскладываются по папкам платформ RomM. Всё неопознанное попадает в отчёт.",
   "lib.3t": "Игра", "lib.3d": "Запустите сканирование в RomM. Приставка сама сгруппирует версии и выберет нужную.",
   "legal": "<b>Играйте честно.</b> Jubilant Potato не содержит игр и не ссылается на них. Используйте его с дампами своих картриджей и дисков, homebrew и бесплатными релизами, и поддерживайте разработчиков.",
-  "foot.docs": "Документация", "foot.issues": "Сообщить о проблеме"
+  "foot.docs": "Документация", "foot.issues": "Сообщить о проблеме",
+  "nav.coffee": "Угостить кофе",
+  "sup.title": "Пусть картошка радуется",
+  "sup.lead": "Jubilant Potato бесплатный и открытый. Кофе — это тестовые устройства и поддержка новых портативок. Спасибо!",
+  "sup.btn": "Угостить кофе"
 };
 
 const en = {};

@@ -1,5 +1,8 @@
 # Jubilant Potato
 
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-f2b13b?logo=buymeacoffee&logoColor=1b1406)](https://buymeacoffee.com/f2mzlbyhvc)
+[![Website](https://img.shields.io/badge/website-meerhelm.github.io-16171d)](https://meerhelm.github.io/jubilant-potato/)
+
 A gamepad-driven ROM downloader for Linux handhelds. Browse a catalog on your
 own server or on archive.org and download games straight into the right ROM
 folder on the device.
@@ -197,6 +200,13 @@ SDL_VIDEODRIVER=dummy POTATO_SCRIPT="a,wait,shot:systems.png,quit" ./potato -win
 Logs go to `potato.log` (app) and `potato.out` (launcher) in the app folder.
 Set `POTATO_DEBUG=1` to also log every button press and the action it maps to,
 which helps with `swap_ab` and `joystick_buttons` on unfamiliar pads.
+
+## Support
+
+Jubilant Potato is free. If it saves you time, you can
+[buy me a coffee](https://buymeacoffee.com/f2mzlbyhvc): it pays for test
+devices and support for more handhelds. The app has the same link as a QR
+code under **Support the project**.
 
 ## License
 
