@@ -28,10 +28,11 @@ type pairingScreen struct {
 	nextPoll time.Time
 	err      error
 	lastSec  int
+	onDone   func() // after pairing; nil opens the source's systems
 }
 
-func newPairingScreen(a *app, src source.Source, p source.Pairer) *pairingScreen {
-	s := &pairingScreen{a: a, src: src, pairer: p}
+func newPairingScreen(a *app, src source.Source, p source.Pairer, onDone func()) *pairingScreen {
+	s := &pairingScreen{a: a, src: src, pairer: p, onDone: onDone}
 	s.begin()
 	return s
 }
@@ -83,7 +84,11 @@ func (s *pairingScreen) Update() bool {
 		case err == nil:
 			// Paired: continue straight to the source.
 			s.a.pop()
-			s.a.push(newSystemsScreen(s.a, s.src))
+			if s.onDone != nil {
+				s.onDone()
+			} else {
+				s.a.push(newSystemsScreen(s.a, s.src))
+			}
 			s.a.notify(T("Connected"))
 			return true
 		case errors.Is(err, source.ErrPairingPending):
@@ -116,6 +121,10 @@ func (s *pairingScreen) Draw(g *Gfx, area sdl.Rect) {
 	case s.err != nil:
 		msg := T("Error: %s", s.err.Error())
 		switch {
+		case errors.Is(s.err, source.ErrItchNoClient):
+			drawCentered(g, area, colDim, T("QR sign-in for itch.io is not set up yet."),
+				T("Put an itch.io API key into config.json"), T("(\"token\" of the itch.io source)"))
+			return
 		case errors.Is(s.err, source.ErrPairingExpired):
 			msg = T("The code has expired")
 		case errors.Is(s.err, source.ErrPairingDenied):

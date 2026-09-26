@@ -90,6 +90,27 @@ original file in the item with a matching extension is listed.
 System IDs: `nes snes gb gbc gba nds n64 md sms gg segacd 32x saturn dc psx
 psp pce atari2600 neogeo fbneo mame`.
 
+On the device, **Add source → archive.org** searches item titles, detects
+which systems an item contains (from folders, extensions and the title),
+and adds the item under the system you pick.
+
+### Source: `itch.io`
+
+Free homebrew from itch.io tag feeds (`gameboy-rom`, `gbstudio`,
+`gameboy-advance`, `nes-rom`, and others), listed without signing in.
+Downloading goes through the official API and needs a sign-in:
+
+- **QR login** (OAuth device flow). This needs an itch.io OAuth app
+  approved for QR login. Register one at itch.io/user/settings/oauth-apps
+  and ask itch.io support to enable "QR code login (device authorization
+  grant)". Then build with `make package ITCH_CLIENT_ID=...` or set
+  `"itch_client_id"` in `config.json`.
+- **API key** as a fallback: create one at itch.io/user/settings/api-keys
+  and put it into the source's `"token"`.
+
+Paid games download only if you own them. The app identifies itself with
+its own User-Agent and spaces out its requests, as itch.io asks.
+
 ## Game versions
 
 Regional releases, revisions, betas, hacks and translations of a game appear

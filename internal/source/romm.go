@@ -23,6 +23,8 @@ type ClientInfo struct {
 	Name     string // shown in the server's device list
 	Platform string
 	Version  string
+
+	ItchClientID string // OAuth app for itch.io QR login; empty disables it
 }
 
 // Pairer is implemented by sources that need an interactive device pairing
@@ -41,6 +43,7 @@ type Pairing struct {
 	Interval   time.Duration
 	Expires    time.Time
 	deviceCode string
+	verifier   string // PKCE secret (itch.io)
 }
 
 var (
@@ -132,7 +135,7 @@ func (s *romm) call(ctx context.Context, method, path string, q url.Values, body
 	for k, v := range s.auth() {
 		req.Header[k] = v
 	}
-	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("User-Agent", UserAgent)
 	req.Header.Set("Accept", "application/json")
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")

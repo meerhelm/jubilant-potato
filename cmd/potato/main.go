@@ -3,6 +3,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -17,8 +18,11 @@ import (
 	"github.com/meerhelm/jubilant-potato/internal/ui"
 )
 
-// version is set at build time with -ldflags "-X main.version=...".
-var version = "dev"
+// Set at build time with -ldflags "-X main.version=... -X main.itchClientID=...".
+var (
+	version      = "dev"
+	itchClientID = ""
+)
 
 // SDL must run on the main OS thread.
 func init() { runtime.LockOSThread() }
@@ -54,11 +58,17 @@ func main() {
 
 	client := source.NewHTTPClient()
 	info := source.ClientInfo{
-		DeviceID: cfg.DeviceID,
-		Name:     deviceName(plat),
-		Platform: string(plat.Firmware),
-		Version:  version,
+		DeviceID:     cfg.DeviceID,
+		Name:         deviceName(plat),
+		Platform:     string(plat.Firmware),
+		Version:      version,
+		ItchClientID: itchClientID,
 	}
+	if cfg.ItchClientID != "" {
+		info.ItchClientID = cfg.ItchClientID
+	}
+	source.UserAgent = fmt.Sprintf("JubilantPotato/%s (+https://github.com/meerhelm/jubilant-potato; %s; %s; %s/%s)",
+		version, plat.Firmware, info.Name, runtime.GOOS, runtime.GOARCH)
 	cfgPath := filepath.Join(appDir, "config.json")
 	var cfgMu sync.Mutex
 	saveConfig := func() error {

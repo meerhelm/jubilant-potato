@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -34,11 +35,17 @@ type gamesScreen struct {
 
 	installed map[string]bool // lower-cased file names and stems in dest
 	doneJobs  int
+
+	// Game pages (itch.io) are resolved into files on demand.
+	resolving   *task[[]source.Game]
+	resolveList bool                     // show the files instead of downloading
+	resolved    map[string][]source.Game // page URL -> files
 }
 
 func newGamesScreen(a *app, src source.Source, sys source.System) *gamesScreen {
 	psys, _ := platform.SystemByID(sys.ID)
-	s := &gamesScreen{a: a, src: src, sys: sys, psys: psys, dest: a.opts.Platform.SystemDir(sys.ID)}
+	s := &gamesScreen{a: a, src: src, sys: sys, psys: psys, dest: a.opts.Platform.SystemDir(sys.ID),
+		resolved: map[string][]source.Game{}}
 	s.t = startTask(func() ([]source.Game, error) { return src.Games(context.Background(), sys) })
 	s.scanInstalled()
 	return s
@@ -50,6 +57,10 @@ func (s *gamesScreen) Update() bool {
 	changed := false
 	if s.t.Poll() {
 		s.rebuild()
+		changed = true
+	}
+	if s.resolving != nil && s.resolving.Poll() {
+		s.finishResolve()
 		changed = true
 	}
 	// Rescan the ROM folder whenever a download finishes.
@@ -101,14 +112,70 @@ func (s *gamesScreen) isInstalled(g source.Game) bool {
 func stem(n string) string { return strings.TrimSuffix(n, filepath.Ext(n)) }
 
 // status reports whether any of the variants is on the device or queued.
+// Game pages count through their resolved files.
 func (s *gamesScreen) status(vs []catalog.Variant) (installed, pending bool) {
+	var games []source.Game
 	for _, v := range vs {
-		if s.isInstalled(v.Game) {
+		if v.Game.Page != "" {
+			games = append(games, s.resolved[v.Game.Page]...)
+		} else {
+			games = append(games, v.Game)
+		}
+	}
+	for _, g := range games {
+		if s.isInstalled(g) {
 			return true, false
 		}
-		pending = pending || s.a.opts.Manager.Pending(v.Game.URL)
+		pending = pending || s.a.opts.Manager.Pending(g.URL)
 	}
 	return false, pending
+}
+
+// resolve fetches the files of a game page, then downloads the preferred
+// one or, with list set, shows them all.
+func (s *gamesScreen) resolve(g source.Game, list bool) {
+	r, ok := s.src.(source.Resolver)
+	if !ok || s.resolving != nil && !s.resolving.done {
+		return
+	}
+	s.resolveList = list
+	s.a.notify(T("Getting files…"))
+	s.resolving = startTask(func() ([]source.Game, error) { return r.Resolve(context.Background(), g) })
+}
+
+func (s *gamesScreen) finishResolve() {
+	files, err := s.resolving.val, s.resolving.err
+	switch {
+	case errors.Is(err, source.ErrNeedsPairing):
+		if p, ok := s.src.(source.Pairer); ok {
+			s.a.push(newPairingScreen(s.a, s.src, p, func() {}))
+		}
+		return
+	case errors.Is(err, source.ErrPaid):
+		s.a.notify(T("Paid game: buy it on itch.io first"))
+		return
+	case errors.Is(err, source.ErrNoFiles):
+		s.a.notify(T("No %s files in this game", s.sys.Label))
+		return
+	case err != nil:
+		s.a.notify(T("Error: %s", err.Error()))
+		return
+	}
+	s.resolved[files[0].Group] = files
+	for _, g := range s.t.val {
+		if g.Group == files[0].Group && g.Page != "" {
+			s.resolved[g.Page] = files
+		}
+	}
+	grp := catalog.Build(files, s.a.prefs, true)
+	if len(grp) == 0 {
+		return
+	}
+	if s.resolveList || len(grp[0].Variants) > 1 {
+		s.a.push(newVariantsScreen(s.a, s, grp[0]))
+		return
+	}
+	s.download(grp[0].Variants)
 }
 
 // mark is the row color for status: green installed, gold queued.
@@ -165,11 +232,19 @@ func (s *gamesScreen) Handle(act Action) {
 		s.jumpLetter(1)
 	case A:
 		if g, ok := s.selected(); ok {
-			s.download(g.Variants)
+			if page := g.Best().Game; page.Page != "" {
+				s.resolve(page, false)
+			} else {
+				s.download(g.Variants)
+			}
 		}
 	case X:
 		if g, ok := s.selected(); ok {
-			s.a.push(newVariantsScreen(s.a, s, g))
+			if page := g.Best().Game; page.Page != "" {
+				s.resolve(page, true)
+			} else {
+				s.a.push(newVariantsScreen(s.a, s, g))
+			}
 		}
 	case Y:
 		if s.t.done {

@@ -100,7 +100,9 @@ func (s *sourcesScreen) Draw(g *Gfx, area sdl.Rect) {
 // credentials, otherwise its system list.
 func openSource(a *app, src source.Source) Screen {
 	if p, ok := src.(source.Pairer); ok && p.NeedsPairing() {
-		return newPairingScreen(a, src, p)
+		if o, ok := src.(source.PairingOptional); !ok || !o.PairingOptional() {
+			return newPairingScreen(a, src, p, nil)
+		}
 	}
 	return newSystemsScreen(a, src)
 }
@@ -131,7 +133,7 @@ func (s *systemsScreen) Update() bool {
 		if p, ok := s.src.(source.Pairer); ok && errors.Is(s.t.err, source.ErrNeedsPairing) {
 			// Token missing or revoked on the server: pair again.
 			s.a.pop()
-			s.a.push(newPairingScreen(s.a, s.src, p))
+			s.a.push(newPairingScreen(s.a, s.src, p, nil))
 			return true
 		}
 		s.l.SetN(len(s.t.val))

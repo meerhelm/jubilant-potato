@@ -144,6 +144,15 @@ func newAddSourceScreen(a *app) Screen {
 		{label: "RomM", right: T("game library server"), action: func() { a.push(newRommFindScreen(a)) }},
 		{label: T("Network folder (SMB)"), right: T("NAS, Windows, macOS"), action: func() { a.push(newSMBFindScreen(a)) }},
 		{label: "archive.org", right: T("search collections"), action: func() { newArchiveSearch(a) }},
+		{label: "itch.io", right: T("free homebrew"), action: func() {
+			for _, c := range a.opts.Config.Sources {
+				if c.Type == "itch" {
+					a.notify(T("Already added"))
+					return
+				}
+			}
+			a.addSource(config.Source{Name: "itch.io", Type: "itch"})
+		}},
 		{label: T("Web folder (HTTP)"), right: T("directory listing"), action: func() {
 			a.push(newInputScreen(a, T("Folder address"), "http://", false, func(u string) {
 				if !validURL(u) {

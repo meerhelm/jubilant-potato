@@ -35,6 +35,10 @@ type Game struct {
 	System  string      // canonical platform system ID
 	Extract bool        // always unpack after download (multi-file bundles)
 
+	// Page, when set, marks a catalog entry that is a game page rather than
+	// a file; the source's Resolver turns it into files (itch.io).
+	Page string
+
 	// Open, when set, reads the file from offset instead of fetching URL
 	// over HTTP, and reports the file's total size (SMB shares).
 	Open func(ctx context.Context, offset int64) (io.ReadCloser, int64, error)
@@ -48,7 +52,9 @@ type Source interface {
 	Games(ctx context.Context, sys System) ([]Game, error)
 }
 
-const userAgent = "jubilant-potato/0.1"
+// UserAgent identifies the app to servers; main sets the full value with
+// version, firmware and device, as itch.io asks clients to.
+var UserAgent = "JubilantPotato (+https://github.com/meerhelm/jubilant-potato)"
 
 // NewHTTPClient returns the client used for catalogs and downloads.
 func NewHTTPClient() *http.Client {
@@ -69,6 +75,8 @@ func New(c config.Source, client *http.Client, info ClientInfo, saveToken func(s
 		return newRomm(c, client, info, saveToken)
 	case "smb":
 		return newSMB(c)
+	case "itch", "itch.io":
+		return newItch(c, client, info, saveToken), nil
 	}
 	return nil, fmt.Errorf("source %q: unknown type %q", c.Name, c.Type)
 }
@@ -81,7 +89,7 @@ func get(ctx context.Context, client *http.Client, url string, h http.Header) (*
 	for k, v := range h {
 		req.Header[k] = v
 	}
-	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("User-Agent", UserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

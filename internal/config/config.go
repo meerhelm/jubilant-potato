@@ -23,6 +23,9 @@ type Config struct {
 	PreferLanguages []string `json:"prefer_languages,omitempty"`
 	Sources         []Source `json:"sources"`
 
+	// ItchClientID overrides the built-in itch.io OAuth client for QR login.
+	ItchClientID string `json:"itch_client_id,omitempty"`
+
 	// DeviceID identifies this handheld to servers that pair devices (RomM).
 	DeviceID string `json:"device_id,omitempty"`
 
