@@ -14,5 +14,8 @@ GOOS=linux GOARCH=arm64 CGO_ENABLED=1 go list -deps -f '{{with .Module}}{{if not
 		lic=$(ls "$dir" 2>/dev/null | grep -iE '^(licen[cs]e|copying)' | head -1)
 		printf '\n================================================================\n%s %s\n================================================================\n\n' "$path" "$version"
 		if [ -n "$lic" ]; then cat "$dir/$lic"; else echo "(license file not found)"; fi
-		[ -f "$dir/NOTICE" ] && { echo; cat "$dir/NOTICE"; }
+		if [ -f "$dir/NOTICE" ]; then
+			echo
+			cat "$dir/NOTICE"
+		fi
 	done
