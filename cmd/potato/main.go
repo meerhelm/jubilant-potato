@@ -51,9 +51,6 @@ func main() {
 	}
 	plat := platform.Detect(appDir, cfg.RomRoot)
 	log.Printf("firmware=%s device=%q roms=%s", plat.Firmware, plat.Device, plat.RomRoot)
-	if len(cfg.JoystickButtons) == 0 {
-		cfg.JoystickButtons = plat.DefaultJoystickButtons()
-	}
 
 	client := source.NewHTTPClient()
 	info := source.ClientInfo{
@@ -64,40 +61,49 @@ func main() {
 	}
 	cfgPath := filepath.Join(appDir, "config.json")
 	var cfgMu sync.Mutex
-	var srcs []source.Source
-	var notices []string
-	for i, c := range cfg.Sources {
-		if c.Disabled {
-			continue
-		}
-		saveToken := func(tok string) error {
-			cfgMu.Lock()
-			defer cfgMu.Unlock()
-			cfg.Sources[i].Token = tok
-			return cfg.Save(cfgPath)
-		}
-		s, err := source.New(c, client, info, saveToken)
-		if err != nil {
-			log.Print(err)
-			notices = append(notices, err.Error())
-			continue
-		}
-		srcs = append(srcs, s)
+	saveConfig := func() error {
+		cfgMu.Lock()
+		defer cfgMu.Unlock()
+		return cfg.Save(cfgPath)
 	}
+	buildSources := func() (srcs []source.Source, notices []string) {
+		for _, c := range cfg.Sources {
+			if c.Disabled {
+				continue
+			}
+			name := c.Name
+			saveToken := func(tok string) error {
+				cfgMu.Lock()
+				defer cfgMu.Unlock()
+				for i := range cfg.Sources {
+					if cfg.Sources[i].Name == name {
+						cfg.Sources[i].Token = tok
+					}
+				}
+				return cfg.Save(cfgPath)
+			}
+			s, err := source.New(c, client, info, saveToken)
+			if err != nil {
+				log.Print(err)
+				notices = append(notices, err.Error())
+				continue
+			}
+			srcs = append(srcs, s)
+		}
+		return srcs, notices
+	}
+	srcs, notices := buildSources()
 
 	err = ui.Run(ui.Options{
-		Config:   cfg,
-		Platform: plat,
-		Sources:  srcs,
-		Manager:  download.NewManager(client),
-		Window:   *window,
-		Version:  version,
-		SaveConfig: func() error {
-			cfgMu.Lock()
-			defer cfgMu.Unlock()
-			return cfg.Save(cfgPath)
-		},
-		Notices: notices,
+		Config:       cfg,
+		Platform:     plat,
+		Sources:      srcs,
+		Manager:      download.NewManager(client),
+		Window:       *window,
+		Version:      version,
+		SaveConfig:   saveConfig,
+		BuildSources: buildSources,
+		Notices:      notices,
 	})
 	if err != nil {
 		log.Fatal(err)

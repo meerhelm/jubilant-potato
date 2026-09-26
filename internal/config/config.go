@@ -38,7 +38,7 @@ type Config struct {
 // Source configures one remote catalog.
 type Source struct {
 	Name     string `json:"name"`
-	Type     string `json:"type"` // "http", "archive.org" or "romm"
+	Type     string `json:"type"` // "http", "smb", "archive.org" or "romm"
 	Disabled bool   `json:"disabled,omitempty"`
 
 	// http: root URL of a directory listing with one folder per system.
@@ -46,6 +46,12 @@ type Source struct {
 	URL      string `json:"url,omitempty"`
 	Username string `json:"username,omitempty"`
 	Password string `json:"password,omitempty"`
+
+	// smb: server, share name and folder inside the share ("roms", "a/b");
+	// Username/Password are optional (guest access is tried first).
+	Host  string `json:"host,omitempty"`
+	Share string `json:"share,omitempty"`
+	Path  string `json:"path,omitempty"`
 
 	// romm: API token obtained by pairing; filled in by the app.
 	Token string `json:"token,omitempty"`

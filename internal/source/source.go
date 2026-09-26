@@ -4,6 +4,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"sort"
 	"strings"
@@ -33,11 +34,16 @@ type Game struct {
 	Header  http.Header // extra request headers (auth)
 	System  string      // canonical platform system ID
 	Extract bool        // always unpack after download (multi-file bundles)
+
+	// Open, when set, reads the file from offset instead of fetching URL
+	// over HTTP, and reports the file's total size (SMB shares).
+	Open func(ctx context.Context, offset int64) (io.ReadCloser, int64, error)
 }
 
 // Source is a remote catalog of games.
 type Source interface {
 	Name() string
+	Kind() string // short type label, e.g. "RomM", "SMB"
 	Systems(ctx context.Context) ([]System, error)
 	Games(ctx context.Context, sys System) ([]Game, error)
 }
@@ -61,6 +67,8 @@ func New(c config.Source, client *http.Client, info ClientInfo, saveToken func(s
 		return newArchiveOrg(c, client), nil
 	case "romm":
 		return newRomm(c, client, info, saveToken)
+	case "smb":
+		return newSMB(c)
 	}
 	return nil, fmt.Errorf("source %q: unknown type %q", c.Name, c.Type)
 }

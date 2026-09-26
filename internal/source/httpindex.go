@@ -43,6 +43,7 @@ func newHTTPIndex(c config.Source, client *http.Client) (*httpIndex, error) {
 }
 
 func (s *httpIndex) Name() string { return s.cfg.Name }
+func (s *httpIndex) Kind() string { return "HTTP" }
 
 func (s *httpIndex) Systems(ctx context.Context) ([]System, error) {
 	var out []System

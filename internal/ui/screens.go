@@ -17,31 +17,53 @@ type sourcesScreen struct {
 	l list
 }
 
+// Rows after the sources.
+const (
+	rowAdd = iota
+	rowDownloads
+	rowButtons
+	extraRows
+)
+
 func newSourcesScreen(a *app) *sourcesScreen {
-	return &sourcesScreen{a: a, l: list{N: len(a.opts.Sources) + 2}}
+	return &sourcesScreen{a: a, l: list{N: len(a.opts.Sources) + extraRows}}
 }
 
 func (s *sourcesScreen) Title() string { return "Jubilant Potato" }
 func (s *sourcesScreen) Update() bool  { return false }
 
 func (s *sourcesScreen) Hints() []Hint {
-	return []Hint{{"A", T("Open")}, {"B", T("Quit")}}
+	h := []Hint{{"A", T("Open")}}
+	if s.l.Sel < len(s.a.opts.Sources) {
+		h = append(h, Hint{"X", T("Remove")})
+	}
+	return append(h, Hint{"B", T("Quit")})
 }
 
 func (s *sourcesScreen) Handle(act Action) {
+	srcs := s.a.opts.Sources
 	switch act {
 	case Up:
 		s.l.Move(-1)
 	case Down:
 		s.l.Move(1)
 	case A:
-		switch n := len(s.a.opts.Sources); {
-		case s.l.Sel < n:
-			s.a.push(openSource(s.a, s.a.opts.Sources[s.l.Sel]))
-		case s.l.Sel == n:
+		if s.l.Sel < len(srcs) {
+			s.a.push(openSource(s.a, srcs[s.l.Sel]))
+			return
+		}
+		switch s.l.Sel - len(srcs) {
+		case rowAdd:
+			s.a.push(newAddSourceScreen(s.a))
+		case rowDownloads:
 			s.a.push(newDownloadsScreen(s.a))
-		default:
+		case rowButtons:
 			s.a.push(newButtonsScreen(s.a))
+		}
+	case X:
+		if s.l.Sel < len(srcs) {
+			name := srcs[s.l.Sel].Name()
+			confirm(s.a, T("Remove %s?", name), func() { s.a.removeSource(name) })
 		}
 	case Select:
 		s.a.push(newDownloadsScreen(s.a))
@@ -52,30 +74,26 @@ func (s *sourcesScreen) Handle(act Action) {
 
 func (s *sourcesScreen) Draw(g *Gfx, area sdl.Rect) {
 	srcs := s.a.opts.Sources
-	rowH := g.S(40)
-	listArea := area
-	listArea.Y += g.S(8)
-	s.l.Draw(g, listArea, rowH, func(i int, r sdl.Rect, sel bool) {
+	area.Y += g.S(8)
+	area.H -= g.S(8)
+	s.l.Draw(g, area, g.S(40), func(i int, r sdl.Rect, sel bool) {
 		if i < len(srcs) {
-			rowText(g, r, srcs[i].Name(), "", sel)
+			rowText(g, r, srcs[i].Name(), srcs[i].Kind(), sel)
 			return
 		}
-		if i == len(srcs)+1 {
-			rowText(g, r, "✎  "+T("Button setup"), "", sel)
-			return
+		switch i - len(srcs) {
+		case rowAdd:
+			rowText(g, r, "+  "+T("Add source"), "", sel)
+		case rowDownloads:
+			right := ""
+			if n := s.a.opts.Manager.Active(); n > 0 {
+				right = T("Downloads (%d active)", n)
+			}
+			rowText(g, r, "↓  "+T("Downloads"), right, sel)
+		case rowButtons:
+			rowText(g, r, "≡  "+T("Button setup"), "", sel)
 		}
-		right := ""
-		if n := s.a.opts.Manager.Active(); n > 0 {
-			right = T("Downloads (%d active)", n)
-		}
-		rowText(g, r, "↓  "+T("Downloads"), right, sel)
 	})
-	if len(srcs) == 0 {
-		msg := area
-		msg.Y += 2*rowH + g.S(8)
-		msg.H -= 2*rowH + g.S(8)
-		drawCentered(g, msg, colDim, T("No sources configured."), T("Add them to config.json next to the app"))
-	}
 }
 
 // openSource returns the first screen for a source: pairing if it needs

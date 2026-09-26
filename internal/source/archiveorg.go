@@ -25,6 +25,7 @@ func newArchiveOrg(c config.Source, client *http.Client) *archiveOrg {
 }
 
 func (s *archiveOrg) Name() string { return s.cfg.Name }
+func (s *archiveOrg) Kind() string { return "archive.org" }
 
 func (s *archiveOrg) Systems(ctx context.Context) ([]System, error) {
 	var out []System

@@ -78,6 +78,7 @@ func newRomm(c config.Source, client *http.Client, info ClientInfo, saveToken fu
 }
 
 func (s *romm) Name() string { return s.cfg.Name }
+func (s *romm) Kind() string { return "RomM" }
 
 func (s *romm) NeedsPairing() bool {
 	s.mu.Lock()

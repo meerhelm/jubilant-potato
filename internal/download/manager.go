@@ -235,6 +235,19 @@ func (m *Manager) fetch(ctx context.Context, j *Job, part string) error {
 	if st, err := os.Stat(part); err == nil {
 		offset = st.Size()
 	}
+	if j.Game.Open != nil {
+		body, total, err := j.Game.Open(ctx, offset)
+		if err != nil {
+			return err
+		}
+		defer body.Close()
+		if offset >= total && total > 0 {
+			j.done.Store(offset)
+			return nil
+		}
+		j.total.Store(total)
+		return m.write(j, part, body, offset, os.O_CREATE|os.O_WRONLY|os.O_APPEND)
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, j.Game.URL, nil)
 	if err != nil {
@@ -269,6 +282,11 @@ func (m *Manager) fetch(ctx context.Context, j *Job, part string) error {
 	if resp.ContentLength > 0 {
 		j.total.Store(offset + resp.ContentLength)
 	}
+	return m.write(j, part, resp.Body, offset, flags)
+}
+
+// write appends body to part after checking free space.
+func (m *Manager) write(j *Job, part string, body io.Reader, offset int64, flags int) error {
 	j.done.Store(offset)
 
 	if total := j.total.Load(); total > 0 {
@@ -285,7 +303,7 @@ func (m *Manager) fetch(ctx context.Context, j *Job, part string) error {
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(f, &progressReader{r: resp.Body, n: &j.done})
+	_, err = io.Copy(f, &progressReader{r: body, n: &j.done})
 	if cerr := f.Close(); err == nil {
 		err = cerr
 	}

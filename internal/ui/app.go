@@ -29,6 +29,9 @@ type Options struct {
 
 	// SaveConfig persists Config after the UI changes it.
 	SaveConfig func() error
+	// BuildSources recreates Sources from Config.Sources after edits and
+	// returns problems with individual entries.
+	BuildSources func() ([]source.Source, []string)
 }
 
 // Hint is a button legend shown in the footer.
@@ -114,7 +117,7 @@ func Run(opts Options) error {
 	}
 	defer g.destroy()
 
-	a := &app{opts: opts, gfx: g, input: newInput(opts.Config.SwapAB, opts.Config.JoystickButtons), script: loadScript(), second: second}
+	a := &app{opts: opts, gfx: g, input: newInput(opts.Config.SwapAB, joystickButtons(opts)), script: loadScript(), second: second}
 	defer a.input.closeAll()
 	a.prefs = catalog.DefaultPrefs(lang)
 	if len(opts.Config.PreferRegions) > 0 {
@@ -292,4 +295,13 @@ func formatBytes(n int64) string {
 		return fmt.Sprintf("%d KB", n>>10)
 	}
 	return fmt.Sprintf("%d B", n)
+}
+
+// joystickButtons is the raw-button fallback map: the user's, else the
+// firmware default.
+func joystickButtons(opts Options) map[string]string {
+	if len(opts.Config.JoystickButtons) > 0 {
+		return opts.Config.JoystickButtons
+	}
+	return opts.Platform.DefaultJoystickButtons()
 }
