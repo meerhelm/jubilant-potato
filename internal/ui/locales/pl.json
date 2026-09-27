@@ -130,5 +130,10 @@
  "Yes": "Tak",
  "You have the latest version": "Masz najnowszą wersję",
  "Language": "Język",
- "Automatic": "Automatycznie"
+ "Automatic": "Automatycznie",
+ "PC game ports": "porty gier z PC",
+ "Install PortMaster first": "Najpierw zainstaluj PortMaster",
+ "Featured ports": "Polecane porty",
+ "All ports": "Wszystkie porty",
+ "Ready to run": "Gotowe do uruchomienia"
 }

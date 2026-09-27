@@ -46,6 +46,18 @@ type Game struct {
 	// Open, when set, reads the file from offset instead of fetching URL
 	// over HTTP, and reports the file's total size (SMB shares).
 	Open func(ctx context.Context, offset int64) (io.ReadCloser, int64, error)
+
+	// MD5, when set, is the hex digest the downloaded file must have.
+	MD5 string
+
+	// Install, when set, installs the downloaded archive instead of it
+	// being kept or extracted (PortMaster ports).
+	Install func(archive string) error
+
+	// Needs lists files the game can't run without (PortMaster runtimes).
+	// They are downloaded into their Dir first unless already there.
+	Needs []Game
+	Dir   string // destination of a needed file
 }
 
 // Source is a remote catalog of games.
@@ -97,6 +109,8 @@ func New(c config.Source, client *http.Client, info ClientInfo, saveToken func(s
 		return newItch(c, client, info, saveToken), nil
 	case "pico8", "pico-8", "lexaloffle":
 		return newLexaloffle(c, client), nil
+	case "portmaster":
+		return newPortMaster(c, client, info.PortMaster, info.Platform, info.CacheDir), nil
 	}
 	return nil, fmt.Errorf("source %q: unknown type %q", c.Name, c.Type)
 }

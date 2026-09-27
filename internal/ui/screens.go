@@ -194,6 +194,8 @@ func (s *systemsScreen) Draw(g *Gfx, area sdl.Rect) {
 	switch {
 	case !s.t.done:
 		drawCentered(g, area, colDim, T("Loading…"))
+	case errors.Is(s.t.err, source.ErrNoPortMaster):
+		drawCentered(g, area, colErr, T("Install PortMaster first"))
 	case s.t.err != nil:
 		drawCentered(g, area, colErr, T("Error: %s", s.t.err.Error()))
 	case len(s.t.val) == 0:
@@ -204,7 +206,7 @@ func (s *systemsScreen) Draw(g *Gfx, area sdl.Rect) {
 		s.l.Draw(g, area, g.S(40), func(i int, r sdl.Rect, sel bool) {
 			sys := s.t.val[i]
 			dir := filepath.Base(s.a.opts.Platform.SystemDir(sys.ID))
-			rowText(g, r, sys.Label, "→ "+dir, sel)
+			rowText(g, r, systemLabel(sys.Label), "→ "+dir, sel)
 		})
 	}
 }

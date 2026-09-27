@@ -25,7 +25,16 @@ type Platform struct {
 	RomRoot  string
 	Language string // firmware UI language as an ISO 639-1 code, "" when unknown
 
-	existing map[string]string // system ID -> folder already present in RomRoot
+	existing   map[string]string // system ID -> folder already present in RomRoot
+	portMaster PortMaster
+}
+
+// PortMaster holds PortMaster's folders as its harbourmaster resolves them:
+// Tools contains PortMaster itself (runtimes live in Tools/PortMaster/libs),
+// Ports the port folders and Scripts their launch scripts. All are empty
+// when PortMaster isn't installed.
+type PortMaster struct {
+	Tools, Ports, Scripts string
 }
 
 // Detect inspects the filesystem to find out which firmware we are on.
@@ -39,7 +48,38 @@ func Detect(appDir, romRootOverride string) Platform {
 		p.RomRoot = defaultRomRoot(p.Firmware, appDir)
 	}
 	p.existing = scanExisting(p.Firmware, p.RomRoot)
+	p.portMaster = detectPortMaster(p.Firmware, p.RomRoot)
 	return p
+}
+
+// PortMaster returns PortMaster's folders, or zero values without it.
+func (p Platform) PortMaster() PortMaster { return p.portMaster }
+
+func detectPortMaster(fw Firmware, romRoot string) PortMaster {
+	var pm PortMaster
+	switch fw {
+	case Rocknix:
+		pm = PortMaster{"/storage/roms/ports", "/storage/roms/ports", "/storage/roms/ports"}
+		if exists("/storage/roms/ports_scripts") {
+			pm.Scripts = "/storage/roms/ports_scripts"
+		}
+	case MuOS:
+		pm = PortMaster{"/mnt/mmc/MUOS", "/mnt/mmc/ports", "/mnt/mmc/ROMS/Ports"}
+		// Ports go to SD2 when a card is there, unless PortMaster was
+		// told to keep them on SD1.
+		if !exists("/mnt/mmc/MUOS/PortMaster/config/muos_mmc_master_race.txt") && isMountPoint("/mnt/sdcard") {
+			pm.Ports, pm.Scripts = "/mnt/sdcard/ports", "/mnt/sdcard/ROMS/Ports"
+		}
+	case Desktop:
+		d := filepath.Join(romRoot, "ports")
+		return PortMaster{d, d, d}
+	default:
+		return PortMaster{}
+	}
+	if !exists(filepath.Join(pm.Tools, "PortMaster")) {
+		return PortMaster{}
+	}
+	return pm
 }
 
 func detectFirmware() Firmware {
@@ -206,6 +246,9 @@ func scanExisting(fw Firmware, root string) map[string]string {
 
 // SystemDir returns the directory where ROMs for a system are stored.
 func (p Platform) SystemDir(systemID string) string {
+	if systemID == "ports" && p.portMaster.Ports != "" {
+		return p.portMaster.Ports
+	}
 	if dir, ok := p.existing[systemID]; ok {
 		return filepath.Join(p.RomRoot, dir)
 	}

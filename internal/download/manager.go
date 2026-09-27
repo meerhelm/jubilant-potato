@@ -4,6 +4,8 @@ package download
 import (
 	"archive/zip"
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -219,6 +221,21 @@ func (m *Manager) run(ctx context.Context, j *Job) error {
 	if err := m.fetch(ctx, j, part); err != nil {
 		return err
 	}
+	if j.Game.MD5 != "" {
+		if err := checkMD5(part, j.Game.MD5); err != nil {
+			os.Remove(part) // start over on retry
+			return err
+		}
+	}
+	if j.Game.Install != nil {
+		j.setState(Extracting, nil)
+		err := j.Game.Install(part)
+		os.Remove(part)
+		if err != nil {
+			return fmt.Errorf("install: %w", err)
+		}
+		return nil
+	}
 	if !j.Extract || !strings.EqualFold(filepath.Ext(final), ".zip") {
 		return os.Rename(part, final)
 	}
@@ -319,6 +336,22 @@ func (p *progressReader) Read(b []byte) (int, error) {
 	n, err := p.r.Read(b)
 	p.n.Add(int64(n))
 	return n, err
+}
+
+func checkMD5(file, want string) error {
+	f, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	h := md5.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return err
+	}
+	if got := hex.EncodeToString(h.Sum(nil)); !strings.EqualFold(got, want) {
+		return errors.New("download is corrupted (MD5 mismatch)")
+	}
+	return nil
 }
 
 func unzip(src, dest string) error {

@@ -64,6 +64,8 @@ func main() {
 		Platform:     string(plat.Firmware),
 		Version:      version,
 		ItchClientID: itchClientID,
+		PortMaster:   plat.PortMaster(),
+		CacheDir:     filepath.Join(appDir, "cache"),
 	}
 	if cfg.ItchClientID != "" {
 		info.ItchClientID = cfg.ItchClientID

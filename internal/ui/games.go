@@ -51,7 +51,20 @@ func newGamesScreen(a *app, src source.Source, sys source.System) *gamesScreen {
 	return s
 }
 
-func (s *gamesScreen) Title() string { return s.sys.Label }
+func (s *gamesScreen) Title() string { return systemLabel(s.sys.Label) }
+
+// systemLabel translates the groups some sources offer instead of systems.
+func systemLabel(l string) string {
+	switch l {
+	case "Featured ports":
+		return T("Featured ports")
+	case "All ports":
+		return T("All ports")
+	case "Ready to run":
+		return T("Ready to run")
+	}
+	return l
+}
 
 func (s *gamesScreen) Update() bool {
 	changed := false
@@ -290,6 +303,14 @@ func (s *gamesScreen) download(vs []catalog.Variant) {
 		s.a.notify(T("Already in queue"))
 	default:
 		g := vs[0].Game
+		for _, n := range g.Needs {
+			if st, err := os.Stat(filepath.Join(n.Dir, n.File)); err == nil && (n.Size == 0 || st.Size() == n.Size) {
+				continue
+			}
+			if !s.a.opts.Manager.Pending(n.URL) {
+				s.a.opts.Manager.Enqueue(n, n.Dir, false)
+			}
+		}
 		s.a.opts.Manager.Enqueue(g, s.dest, s.psys.Extract || g.Extract)
 		s.a.notify(T("Queued: %s", g.Name))
 	}

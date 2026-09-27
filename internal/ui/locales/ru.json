@@ -130,5 +130,10 @@
  "Yes": "Да",
  "You have the latest version": "У вас последняя версия",
  "Language": "Язык",
- "Automatic": "Автоматически"
+ "Automatic": "Автоматически",
+ "PC game ports": "порты игр с ПК",
+ "Install PortMaster first": "Сначала установите PortMaster",
+ "Featured ports": "Избранные порты",
+ "All ports": "Все порты",
+ "Ready to run": "Готовые к запуску"
 }

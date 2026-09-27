@@ -135,6 +135,28 @@ configuration → PICO-8 → Emulator → retroarch: fake08*.
 {"name": "PICO-8 BBS", "type": "pico8"}
 ```
 
+### Source: `portmaster`
+
+Ports of PC games from the catalog PortMaster itself installs from,
+grouped as PortMaster's own menu does: featured ports, all ports, and
+ports that are ready to run. Only ports built for the device's CPU and
+allowed on its firmware are listed. Needs PortMaster (ROCKNIX, muOS).
+The catalog is kept in `cache/portmaster` next to the app and downloaded
+again only when it changes on GitHub (ETag); without a connection the
+kept copy is used.
+
+Ports are installed the way PortMaster does it, so it lists them as its
+own: the launch script goes to `ports` (ROCKNIX) or `ROMS/Ports` (muOS),
+the game folder next to PortMaster's ports, and the runtimes a port mounts
+(Godot, Mono, Java, ...) into `PortMaster/libs` before the port itself.
+Downloads are checked against the catalog's MD5. **A** on a port opens its
+page: screenshot, description and what to copy from your own copy of the
+game, for ports that aren't ready to run.
+
+```json
+{"name": "PortMaster", "type": "portmaster"}
+```
+
 ## Game versions
 
 Regional releases, revisions, betas, hacks and translations of a game appear

@@ -162,6 +162,15 @@ func newAddSourceScreen(a *app) Screen {
 			}
 			a.addSource(config.Source{Name: "PICO-8 BBS", Type: "pico8"})
 		}},
+		{label: "PortMaster", right: T("PC game ports"), action: func() {
+			for _, c := range a.opts.Config.Sources {
+				if c.Type == "portmaster" {
+					a.notify(T("Already added"))
+					return
+				}
+			}
+			a.addSource(config.Source{Name: "PortMaster", Type: "portmaster"})
+		}},
 		{label: T("Web folder (HTTP)"), right: T("directory listing"), action: func() {
 			a.push(newInputScreen(a, T("Folder address"), "http://", false, func(u string) {
 				if !validURL(u) {

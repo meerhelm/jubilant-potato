@@ -25,6 +25,9 @@ type ClientInfo struct {
 	Version  string
 
 	ItchClientID string // OAuth app for itch.io QR login; empty disables it
+
+	PortMaster platform.PortMaster // where ports go; empty without PortMaster
+	CacheDir   string              // for catalogs kept between runs; "" keeps none
 }
 
 // Pairer is implemented by sources that need an interactive device pairing

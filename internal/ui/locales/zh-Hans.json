@@ -130,5 +130,10 @@
  "Yes": "是",
  "You have the latest version": "已是最新版本",
  "Language": "语言",
- "Automatic": "自动"
+ "Automatic": "自动",
+ "PC game ports": "PC 游戏移植",
+ "Install PortMaster first": "请先安装 PortMaster",
+ "Featured ports": "精选移植",
+ "All ports": "全部移植",
+ "Ready to run": "即装即玩"
 }

@@ -130,5 +130,10 @@
  "Yes": "Так",
  "You have the latest version": "У вас остання версія",
  "Language": "Мова",
- "Automatic": "Автоматично"
+ "Automatic": "Автоматично",
+ "PC game ports": "порти ігор з ПК",
+ "Install PortMaster first": "Спершу встановіть PortMaster",
+ "Featured ports": "Вибрані порти",
+ "All ports": "Усі порти",
+ "Ready to run": "Готові до запуску"
 }

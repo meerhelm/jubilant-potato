@@ -44,7 +44,7 @@ type Config struct {
 // Source configures one remote catalog.
 type Source struct {
 	Name     string `json:"name"`
-	Type     string `json:"type"` // "http", "smb", "archive.org", "romm", "itch" or "pico8"
+	Type     string `json:"type"` // "http", "smb", "archive.org", "romm", "itch", "pico8" or "portmaster"
 	Disabled bool   `json:"disabled,omitempty"`
 
 	// http: root URL of a directory listing with one folder per system.
