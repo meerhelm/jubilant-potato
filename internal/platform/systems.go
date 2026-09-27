@@ -58,6 +58,8 @@ var systems = []System{
 		Aliases: []string{"fba", "finalburn", "finalburnneo", "arcade"}},
 	{ID: "mame", Name: "Arcade (MAME)", Exts: nil,
 		Aliases: []string{"mame2003", "mame2003plus", "mame2010"}},
+	{ID: "pico8", Name: "PICO-8", Exts: []string{".p8", ".p8.png"},
+		Aliases: []string{"pico", "Lexaloffle - PICO-8"}},
 }
 
 var archiveExts = []string{".zip", ".7z"}
@@ -99,17 +101,15 @@ func MatchSystem(name string) (System, bool) {
 
 // Accepts reports whether a file name looks like a ROM for this system.
 // Systems without an extension list (arcade) accept archives only.
+// Extensions may have two parts (".p8.png").
 func (s System) Accepts(file string) bool {
-	ext := strings.ToLower(path.Ext(file))
-	if ext == "" {
-		return false
-	}
+	name := strings.ToLower(path.Base(file))
 	list := s.Exts
 	if len(list) == 0 {
 		list = archiveExts
 	}
 	for _, e := range list {
-		if e == ext {
+		if len(name) > len(e) && strings.HasSuffix(name, e) {
 			return true
 		}
 	}

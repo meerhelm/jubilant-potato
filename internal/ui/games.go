@@ -232,8 +232,11 @@ func (s *gamesScreen) Handle(act Action) {
 		s.jumpLetter(1)
 	case A:
 		if g, ok := s.selected(); ok {
+			_, describes := s.src.(source.Describer)
 			if page := g.Best().Game; page.Page != "" {
 				s.resolve(page, false)
+			} else if describes && page.Info != "" {
+				s.a.push(newGameInfoScreen(s.a, s, g))
 			} else {
 				s.download(g.Variants)
 			}

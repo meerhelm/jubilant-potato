@@ -212,6 +212,9 @@ func (a *app) top() Screen { return a.stack[len(a.stack)-1] }
 func (a *app) push(s Screen) { a.stack = append(a.stack, s) }
 
 func (a *app) pop() {
+	if c, ok := a.top().(interface{ Close() }); ok {
+		c.Close()
+	}
 	a.stack = a.stack[:len(a.stack)-1]
 	if len(a.stack) == 0 {
 		a.quit = true

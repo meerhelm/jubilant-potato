@@ -117,6 +117,24 @@ Downloading goes through the official API and needs a sign-in:
 Paid games download only if you own them. The app identifies itself with
 its own User-Agent and spaces out its requests, as itch.io asks.
 
+### Source: `pico8`
+
+PICO-8 carts from the Lexaloffle BBS: every featured cart plus the newest
+releases of the Cartridges forum, no account needed. Carts download as
+`.p8.png` files named after their title, the same files SPLORE fetches, into
+`PICO8` (muOS), `pico-8` (ROCKNIX) or `PICO` (stock). **A** on a cart opens
+its page: the label, pictures and description from its BBS thread.
+
+ROCKNIX runs PICO-8 carts with the official PICO-8 by default, which you
+have to buy and install yourself: copy `pico8_64` and `pico8.dat` from the
+*Raspberry Pi* download into `roms/pico-8/aarch64/`. Without it, pick the
+free fake-08 core for the system: *Game settings → Per system advanced
+configuration → PICO-8 → Emulator → retroarch: fake08*.
+
+```json
+{"name": "PICO-8 BBS", "type": "pico8"}
+```
+
 ## Game versions
 
 Regional releases, revisions, betas, hacks and translations of a game appear

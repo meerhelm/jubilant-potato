@@ -39,6 +39,10 @@ type Game struct {
 	// a file; the source's Resolver turns it into files (itch.io).
 	Page string
 
+	// Info, when set, is a web page describing the game; the source's
+	// Describer reads it (PICO-8 BBS threads).
+	Info string
+
 	// Open, when set, reads the file from offset instead of fetching URL
 	// over HTTP, and reports the file's total size (SMB shares).
 	Open func(ctx context.Context, offset int64) (io.ReadCloser, int64, error)
@@ -50,6 +54,20 @@ type Source interface {
 	Kind() string // short type label, e.g. "RomM", "SMB"
 	Systems(ctx context.Context) ([]System, error)
 	Games(ctx context.Context, sys System) ([]Game, error)
+}
+
+// Details describes a game beyond its files.
+type Details struct {
+	Author      string
+	Description string // plain text, paragraphs separated by blank lines
+	Tags        []string
+	Images      []string // image URLs, cover first
+}
+
+// Describer is implemented by sources that can describe a game (Game.Info)
+// before it is downloaded.
+type Describer interface {
+	Details(ctx context.Context, g Game) (*Details, error)
 }
 
 // UserAgent identifies the app to servers; main sets the full value with
@@ -77,6 +95,8 @@ func New(c config.Source, client *http.Client, info ClientInfo, saveToken func(s
 		return newSMB(c)
 	case "itch", "itch.io":
 		return newItch(c, client, info, saveToken), nil
+	case "pico8", "pico-8", "lexaloffle":
+		return newLexaloffle(c, client), nil
 	}
 	return nil, fmt.Errorf("source %q: unknown type %q", c.Name, c.Type)
 }
@@ -102,7 +122,7 @@ func get(ctx context.Context, client *http.Client, url string, h http.Header) (*
 }
 
 func sortGames(g []Game) {
-	sort.Slice(g, func(i, j int) bool { return strings.ToLower(g[i].Name) < strings.ToLower(g[j].Name) })
+	sort.SliceStable(g, func(i, j int) bool { return strings.ToLower(g[i].Name) < strings.ToLower(g[j].Name) })
 }
 
 func sortSystems(s []System) {

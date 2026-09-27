@@ -156,6 +156,7 @@ var folders = map[Firmware]map[string]string{
 		"n64": "N64", "md": "MD", "sms": "SMS", "gg": "GG", "segacd": "MDCD", "32x": "SEGA32X",
 		"saturn": "SATURN", "dc": "DREAMCAST", "psx": "PS", "psp": "PSP", "pce": "PCE",
 		"atari2600": "A2600", "neogeo": "NEOGEO", "fbneo": "FBNEO", "mame": "MAME",
+		"pico8": "PICO",
 	},
 	// muOS folder names are free-form; these are recognised by its
 	// auto-assign. MAME has no auto-assign entry, so arcade goes to ARCADE.
@@ -164,12 +165,14 @@ var folders = map[Firmware]map[string]string{
 		"n64": "N64", "md": "MD", "sms": "SMS", "gg": "GG", "segacd": "SEGACD", "32x": "32X",
 		"saturn": "SATURN", "dc": "DC", "psx": "PS", "psp": "PSP", "pce": "PCE",
 		"atari2600": "ATARI2600", "neogeo": "NEOGEO", "fbneo": "ARCADE", "mame": "ARCADE",
+		"pico8": "PICO8",
 	},
 	Rocknix: {
 		"nes": "nes", "snes": "snes", "gb": "gb", "gbc": "gbc", "gba": "gba", "nds": "nds",
 		"n64": "n64", "md": "genesis", "sms": "mastersystem", "gg": "gamegear", "segacd": "segacd",
 		"32x": "sega32x", "saturn": "saturn", "dc": "dreamcast", "psx": "psx", "psp": "psp",
 		"pce": "pcengine", "atari2600": "atari2600", "neogeo": "neogeo", "fbneo": "fbneo", "mame": "mame",
+		"pico8": "pico-8",
 	},
 }
 
