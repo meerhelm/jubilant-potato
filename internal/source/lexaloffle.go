@@ -66,7 +66,9 @@ func (s *lexaloffle) Games(ctx context.Context, sys System) ([]Game, error) {
 	var wg sync.WaitGroup
 	slots := make(chan struct{}, 4) // be gentle with the BBS
 	for _, l := range lexaloffleLists {
-		pages[l.order] = make([]page, l.pages)
+		pages[l.order] = make([]page, l.pages) // before any fetch writes to it
+	}
+	for _, l := range lexaloffleLists {
 		for i := range l.pages {
 			wg.Add(1)
 			go func() {
