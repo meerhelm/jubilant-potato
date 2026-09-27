@@ -153,7 +153,7 @@ html.i18n-pending body { visibility: hidden; }
 .abxy i:nth-child(4) { left: 16px; bottom: 0; }
 
 /* Sources */
-.sources { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 36px; }
+.sources { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 36px; }
 .source { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
 .source h3 { font-size: 20px; margin-bottom: 6px; }
 .source p { margin: 0; color: var(--dim); font-size: 14px; }
@@ -309,7 +309,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; j
 <section id="sources">
   <div class="wrap">
     <div class="eyebrow" data-i18n="sources.eyebrow">Where games come from</div>
-    <h2 class="section-title" data-i18n="sources.title">Five kinds of sources, all from the couch</h2>
+    <h2 class="section-title" data-i18n="sources.title">Six kinds of sources, all from the couch</h2>
     <p class="lead" data-i18n="sources.lead">Add them on the device with “Add source”. Servers on your network are found automatically.</p>
     <div class="sources">
       <div class="source"><span class="tag" data-i18n="src.server">Server</span><h3>RomM</h3><p data-i18n="src.romm">Your self-hosted game library. Found on the network, paired with a QR code, and no password typed on the handheld.</p></div>
@@ -317,6 +317,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; j
       <div class="source"><span class="tag" data-i18n="src.web">Web</span><h3 data-i18n="src.http.title">Web folder</h3><p data-i18n="src.http">Any directory listing: nginx, Caddy, Apache, or just <code>python -m http.server</code>.</p></div>
       <div class="source"><span class="tag" data-i18n="src.archive">Archive</span><h3>archive.org</h3><p data-i18n="src.ia">Search collections by title. The systems inside an item are detected for you.</p></div>
       <div class="source"><span class="tag" data-i18n="src.homebrew">Homebrew</span><h3>itch.io</h3><p data-i18n="src.itch">Free homebrew for Game Boy, GBA, NES, Mega Drive and more, plus the games you own.</p></div>
+      <div class="source"><span class="tag" data-i18n="src.fantasy">Fantasy console</span><h3>PICO-8</h3><p data-i18n="src.pico8">Featured and new carts from the Lexaloffle BBS, each with its label, screenshots and description.</p></div>
     </div>
   </div>
 </section>
