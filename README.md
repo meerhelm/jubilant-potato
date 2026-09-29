@@ -52,7 +52,7 @@ On first launch the app creates an empty `config.json` next to the binary.
 |---|---|
 | `language` | `en`, `ru`, `uk`, `be`, `pl`, `es`, `pt`, `zh-Hans` or `zh-Hant`; also changeable in the app (default: the firmware's UI language on ROCKNIX and muOS, else `$LANG`, else English) |
 | `rom_root` | override the detected ROM root |
-| `swap_ab` | swap confirm/back if your pad mapping is positional |
+| `swap_ab` | swap confirm/back; on ROCKNIX the app already matches EmulationStation's A and B, and this flips it |
 | `disable_update_check` | don't check GitHub for new versions on startup |
 | `prefer_regions` | variant preference, e.g. `["USA", "Europe", "Japan"]` |
 | `prefer_languages` | variant preference, e.g. `["ru", "en"]` (default: UI language, then English) |

@@ -57,6 +57,8 @@ type axisKey struct {
 type Input struct {
 	swapAB     bool
 	joyButtons map[uint8]Action
+	frontend   frontendButtons
+	swapped    map[sdl.JoystickID]bool // pads whose SDL mapping has A and B the other way round
 
 	controllers map[sdl.JoystickID]*sdl.GameController
 	joysticks   map[sdl.JoystickID]*sdl.Joystick
@@ -70,10 +72,12 @@ type Input struct {
 	hatDir  map[sdl.JoystickID]uint8
 }
 
-func newInput(swapAB bool, joyButtons map[string]string) *Input {
+func newInput(swapAB bool, joyButtons map[string]string, frontend frontendButtons) *Input {
 	in := &Input{
 		swapAB:      swapAB,
 		joyButtons:  map[uint8]Action{},
+		frontend:    frontend,
+		swapped:     map[sdl.JoystickID]bool{},
 		controllers: map[sdl.JoystickID]*sdl.GameController{},
 		joysticks:   map[sdl.JoystickID]*sdl.Joystick{},
 		held:        map[Action]time.Time{},
@@ -136,7 +140,7 @@ func (in *Input) handle(ev sdl.Event) []Action {
 		return in.set(keyAction(e.Keysym.Sym), e.Type == sdl.KEYDOWN)
 
 	case *sdl.ControllerButtonEvent:
-		return in.set(in.controllerButton(e.Button), e.Type == sdl.CONTROLLERBUTTONDOWN)
+		return in.set(in.controllerButton(e.Which, e.Button), e.Type == sdl.CONTROLLERBUTTONDOWN)
 	case *sdl.ControllerAxisEvent:
 		switch e.Axis {
 		case sdl.CONTROLLER_AXIS_LEFTX:
@@ -234,17 +238,19 @@ func (in *Input) hat(joy sdl.JoystickID, v uint8) []Action {
 	return out
 }
 
-func (in *Input) controllerButton(b uint8) Action {
-	// Handheld mapping DBs (muOS, ROCKNIX, PortMaster) name buttons after
-	// their printed labels, so SDL "a" is the button marked A.
+func (in *Input) controllerButton(id sdl.JoystickID, b uint8) Action {
+	// Handheld mapping DBs (muOS, ROCKNIX, PortMaster) mostly name buttons
+	// after their printed labels, so SDL "a" is the button marked A. Pads
+	// where the frontend disagrees are swapped on open; swap_ab flips that.
+	swap := in.swapAB != in.swapped[id]
 	switch b {
 	case sdl.CONTROLLER_BUTTON_A:
-		if in.swapAB {
+		if swap {
 			return B
 		}
 		return A
 	case sdl.CONTROLLER_BUTTON_B:
-		if in.swapAB {
+		if swap {
 			return A
 		}
 		return B
@@ -309,8 +315,13 @@ func keyAction(k sdl.Keycode) Action {
 func (in *Input) open(index int) {
 	if sdl.IsGameController(index) {
 		if c := sdl.GameControllerOpen(index); c != nil {
-			in.controllers[c.Joystick().InstanceID()] = c
+			j := c.Joystick()
+			in.controllers[j.InstanceID()] = c
 			log.Printf("input: controller %q: %s", c.Name(), c.Mapping())
+			if in.frontend.swapsAB(guidString(j.GUID()), j.Name(), c.Mapping()) {
+				in.swapped[j.InstanceID()] = true
+				log.Printf("input: A and B swapped to match the frontend's mapping")
+			}
 		}
 		return
 	}
@@ -324,6 +335,7 @@ func (in *Input) close(id sdl.JoystickID) {
 	if c, ok := in.controllers[id]; ok {
 		c.Close()
 		delete(in.controllers, id)
+		delete(in.swapped, id)
 	}
 	if j, ok := in.joysticks[id]; ok {
 		j.Close()

@@ -15,7 +15,7 @@ import (
 type Config struct {
 	Language string `json:"language,omitempty"` // "en" or "ru"; empty = from $LANG
 	RomRoot  string `json:"rom_root,omitempty"` // overrides the detected ROM root
-	SwapAB   bool   `json:"swap_ab,omitempty"`  // swap confirm/back if the pad mapping is positional
+	SwapAB   bool   `json:"swap_ab,omitempty"`  // swap confirm/back on top of what the app detects
 
 	// Variant preferences, best first, e.g. ["USA", "Europe"] and ["ru", "en"].
 	// Defaults: USA, World, Europe, Japan; the UI language, then English.

@@ -271,6 +271,15 @@ func (p Platform) DefaultJoystickButtons() map[string]string {
 	}
 }
 
+// FrontendInputConfig is the frontend's controller config, which names
+// buttons after their printed labels, or "" when there is none to follow.
+func (p Platform) FrontendInputConfig() string {
+	if p.Firmware == Rocknix {
+		return "/storage/.config/emulationstation/es_input.cfg"
+	}
+	return ""
+}
+
 // FreeBytes returns free space on the filesystem holding dir.
 func FreeBytes(dir string) (uint64, error) {
 	for {

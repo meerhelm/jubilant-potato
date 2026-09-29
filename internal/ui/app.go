@@ -127,7 +127,7 @@ func Run(opts Options) (restart bool, err error) {
 	}
 	defer g.destroy()
 
-	a := &app{opts: opts, gfx: g, input: newInput(opts.Config.SwapAB, joystickButtons(opts)), script: loadScript(), second: second}
+	a := &app{opts: opts, gfx: g, input: newInput(opts.Config.SwapAB, joystickButtons(opts), loadFrontendButtons(opts.Platform.FrontendInputConfig())), script: loadScript(), second: second}
 	defer a.input.closeAll()
 	a.updatePrefs()
 	a.push(newSourcesScreen(a))
@@ -150,10 +150,14 @@ func (a *app) loop() {
 	var lastDraw time.Time
 	for !a.quit {
 		for ev := sdl.PollEvent(); ev != nil; ev = sdl.PollEvent() {
-			switch ev.(type) {
+			switch e := ev.(type) {
 			case *sdl.QuitEvent:
+				log.Print("quit: SDL quit event")
 				a.quit = true
 			case *sdl.WindowEvent:
+				if e.Event == sdl.WINDOWEVENT_CLOSE {
+					log.Printf("quit: window %d closed", e.WindowID)
+				}
 				dirty = true
 			}
 			for _, act := range a.input.Handle(ev) {
@@ -201,6 +205,7 @@ func (a *app) loop() {
 
 func (a *app) dispatch(act Action) {
 	if act == Menu {
+		log.Print("quit: menu button")
 		a.quit = true
 		return
 	}
@@ -217,6 +222,7 @@ func (a *app) pop() {
 	}
 	a.stack = a.stack[:len(a.stack)-1]
 	if len(a.stack) == 0 {
+		log.Print("quit: back from the first screen")
 		a.quit = true
 	}
 }
